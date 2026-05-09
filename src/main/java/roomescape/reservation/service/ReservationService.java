@@ -33,23 +33,12 @@ public class ReservationService {
         ReservationTime reservationTime = reservationTimeRepository.findById(timeId)
                 .orElseThrow(ReservationTimeNotFoundException::new);
 
-        validateDateTime(date, reservationTime.getStartAt());
         existsByDateAndTimeId(date, timeId);
 
         Reservation reservation =
                 Reservation.createNew(name, date, reservationTime);
 
         return reservationRepository.save(reservation);
-    }
-
-    private void validateDateTime(final LocalDate date, final LocalTime time) {
-        LocalDateTime reservationDateTime = LocalDateTime.of(date, time);
-
-        if (reservationDateTime.isBefore(LocalDateTime.now())) {
-            throw new ReservationBadRequestException(
-                    ReservationErrorCode.RESERVATION_INVALID_DATE.getMessage()
-            );
-        }
     }
 
     private void existsByDateAndTimeId(final LocalDate date, final Long timeId) {
