@@ -51,4 +51,8 @@ public class ReservationTime {
         return new ReservationTime(id, this.startAt, this.theme);
     }
 
+    public boolean isAfter(LocalTime time) {
+        return this.startAt.isAfter(time);
+    }
+
 }

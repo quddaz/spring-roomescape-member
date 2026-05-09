@@ -37,19 +37,6 @@ public class Reservation {
         return new Reservation(null, name, date, time);
     }
 
-    private static void validate(final String name, final LocalDate date, final ReservationTime time) {
-        List<String> errors = new ArrayList<>();
-
-        validateName(name, errors);
-        validateDate(date, errors);
-        validateTime(time, errors);
-        validateDateTime(date, time.getStartAt(), errors);
-
-        if (!errors.isEmpty()) {
-            throw new InvalidReservationException(errors);
-        }
-    }
-
     public static Reservation of(final long id, final String name, final LocalDate date, final ReservationTime time) {
         return new Reservation(id, name, date, time);
     }
@@ -57,6 +44,20 @@ public class Reservation {
     public Reservation withId(final long id) {
         return new Reservation(id, this.name, this.date, this.time);
     }
+
+    private static void validate(final String name, final LocalDate date, final ReservationTime time) {
+        List<String> errors = new ArrayList<>();
+
+        validateName(name, errors);
+        validateDate(date, errors);
+        validateTime(time, errors);
+        validateDateTime(date, time, errors);
+
+        if (!errors.isEmpty()) {
+            throw new InvalidReservationException(errors);
+        }
+    }
+
 
     private static void validateName(final String name, final List<String> errors) {
         if (name == null || name.isBlank() || name.length() >= NAME_MAX_LENGTH) {
@@ -76,10 +77,13 @@ public class Reservation {
         }
     }
 
-    private static void validateDateTime(final LocalDate date, final LocalTime time, final List<String> errors) {
-        LocalDateTime reservationDateTime = LocalDateTime.of(date, time);
+    private static void validateDateTime(final LocalDate date, final ReservationTime time, final List<String> errors) {
+        if (date.isBefore(LocalDate.now())) {
+            errors.add(ReservationErrorCode.RESERVATION_INVALID_DATE.getMessage());
+            return;
+        }
 
-        if (reservationDateTime.isBefore(LocalDateTime.now())) {
+        if (date.isEqual(LocalDate.now()) && time.isAfter(LocalTime.now())) {
             errors.add(ReservationErrorCode.RESERVATION_INVALID_DATE.getMessage());
         }
     }
