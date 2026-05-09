@@ -26,6 +26,8 @@ public class Reservation {
     private final ReservationTime time;
 
     private Reservation(final Long id, final String name, final LocalDate date, final ReservationTime time) {
+        validate(name, date, time);
+
         this.id = id;
         this.name = name;
         this.date = date;
@@ -51,7 +53,6 @@ public class Reservation {
         validateName(name, errors);
         validateDate(date, errors);
         validateTime(time, errors);
-        validateDateTime(date, time, errors);
 
         if (!errors.isEmpty()) {
             throw new InvalidReservationException(errors);
@@ -74,17 +75,6 @@ public class Reservation {
     private static void validateTime(final ReservationTime time, final List<String> errors) {
         if (time == null) {
             errors.add(ReservationErrorCode.RESERVATION_TIME_NOT_NULL.getMessage());
-        }
-    }
-
-    private static void validateDateTime(final LocalDate date, final ReservationTime time, final List<String> errors) {
-        if (date.isBefore(LocalDate.now())) {
-            errors.add(ReservationErrorCode.RESERVATION_INVALID_DATE.getMessage());
-            return;
-        }
-
-        if (date.isEqual(LocalDate.now()) && time.isAfter(LocalTime.now())) {
-            errors.add(ReservationErrorCode.RESERVATION_INVALID_DATE.getMessage());
         }
     }
 

@@ -33,6 +33,7 @@ public class ReservationService {
         ReservationTime reservationTime = reservationTimeRepository.findById(timeId)
                 .orElseThrow(ReservationTimeNotFoundException::new);
 
+        validateDateTime(date, reservationTime.getStartAt());
         existsByDateAndTimeId(date, timeId);
 
         Reservation reservation =
@@ -44,6 +45,16 @@ public class ReservationService {
     private void existsByDateAndTimeId(final LocalDate date, final Long timeId) {
         if (reservationRepository.existsByDateAndTimeId(date, timeId)) {
             throw new ReservationDuplicateException();
+        }
+    }
+
+    private void validateDateTime(final LocalDate date, final LocalTime time) {
+        LocalDateTime reservationDateTime = LocalDateTime.of(date, time);
+
+        if (reservationDateTime.isBefore(LocalDateTime.now())) {
+            throw new ReservationBadRequestException(
+                    ReservationErrorCode.RESERVATION_INVALID_DATE.getMessage()
+            );
         }
     }
 
