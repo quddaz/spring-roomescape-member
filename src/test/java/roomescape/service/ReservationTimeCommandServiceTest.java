@@ -74,7 +74,7 @@ class ReservationTimeCommandServiceTest {
         Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createNew(LocalTime.of(10, 0), theme));
         reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time)
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId())
         );
 
         assertThatThrownBy(() -> reservationTimeCommandService.deleteById(time.getId()))

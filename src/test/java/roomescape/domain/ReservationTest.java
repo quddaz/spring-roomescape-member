@@ -27,7 +27,7 @@ class ReservationTest {
         ReservationTime time = ReservationTime.createNew(LocalTime.parse("10:00"), theme);
 
         // when & then
-        assertThatCode(() -> Reservation.createNew(name, date, time))
+        assertThatCode(() -> Reservation.createNew(name, date, time.getId()))
                 .doesNotThrowAnyException();
     }
 
@@ -42,7 +42,7 @@ class ReservationTest {
         ReservationTime time = ReservationTime.createNew(LocalTime.parse("10:00"), theme);
 
         // when & then
-        assertThatThrownBy(() -> Reservation.createNew(name, date, time))
+        assertThatThrownBy(() -> Reservation.createNew(name, date, time.getId()))
                 .isInstanceOf(InvalidReservationException.class);
     }
 
@@ -55,7 +55,7 @@ class ReservationTest {
         ReservationTime time = ReservationTime.createNew(LocalTime.parse("10:00"), theme);
 
         // when & then
-        assertThatThrownBy(() -> Reservation.createNew(name, null, time))
+        assertThatThrownBy(() -> Reservation.createNew(name, null, time.getId()))
                 .isInstanceOf(InvalidReservationException.class);
     }
 

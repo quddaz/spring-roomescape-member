@@ -60,6 +60,9 @@ public class FakeReservationTimeRepository implements ReservationTimeRepository 
             saved = reservationTime.withId(sequence++);
         }
         storage.add(saved);
+        if (reservationRepository instanceof FakeReservationRepository fakeReservationRepository) {
+            fakeReservationRepository.recordReservationTime(saved.getId(), saved.getTheme().getId());
+        }
         return saved;
     }
 

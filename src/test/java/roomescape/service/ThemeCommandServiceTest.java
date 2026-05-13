@@ -4,13 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.repository.ReservationRepository;
-import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.service.stub.FakeReservationRepository;
 import roomescape.service.stub.FakeThemeRepository;
 import roomescape.theme.domain.Theme;
@@ -22,7 +19,7 @@ import roomescape.theme.service.ThemeCommandService;
 class ThemeCommandServiceTest {
 
     private ThemeCommandService themeCommandService;
-    private ReservationRepository reservationRepository;
+    private FakeReservationRepository reservationRepository;
     private ThemeRepository themeRepository;
 
     @BeforeEach
@@ -53,12 +50,10 @@ class ThemeCommandServiceTest {
     @DisplayName("예약 존재하는 테마 삭제 예외")
     void deleteById_whenExistsReservation_throws() {
         Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
+        long timeId = 1L;
+        reservationRepository.recordReservationTime(timeId, theme.getId());
         reservationRepository.save(
-                Reservation.createNew(
-                        "쿠다",
-                        LocalDate.now(),
-                        ReservationTime.createNew(LocalTime.of(10, 0), theme)
-                )
+                Reservation.createNew("쿠다", LocalDate.now(), timeId)
         );
 
         assertThatThrownBy(() -> themeCommandService.deleteById(theme.getId()))

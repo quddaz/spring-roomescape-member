@@ -28,16 +28,14 @@ public class ReservationCommandService {
     public ReservationResult save(final String name, final LocalDate date, final Long timeId) {
         ReservationTime reservationTime = findReservationTime(timeId);
 
-        validateDateTime(date, reservationTime.getStartAt());
         validateDuplicate(date, timeId);
 
-        Reservation reservation =
-                Reservation.createNew(name, date, reservationTime);
+        Reservation reservation = Reservation.createNew(name, date, timeId);
+        validateDateTime(reservation, reservationTime.getStartAt());
 
-        Reservation savedReservation =
-                reservationRepository.save(reservation);
+        Reservation savedReservation = reservationRepository.save(reservation);
 
-        return ReservationResult.from(savedReservation);
+        return ReservationResult.of(savedReservation, reservationTime);
     }
 
     public void deleteById(final long id) {
@@ -59,11 +57,11 @@ public class ReservationCommandService {
 
         ReservationTime reservationTime = findReservationTime(timeId);
 
-        validateDateTime(date, reservationTime.getStartAt());
+        validateDateTime(reservation, reservationTime.getStartAt());
         validateDuplicate(date, timeId);
 
         reservationRepository.update(
-                reservation.modify(date, reservationTime)
+                reservation.modify(date, timeId)
         );
     }
 
@@ -83,14 +81,9 @@ public class ReservationCommandService {
         }
     }
 
-    private void validateDateTime(final LocalDate date, final LocalTime time) {
-        LocalDateTime reservationDateTime =
-                LocalDateTime.of(date, time);
-
-        if (reservationDateTime.isBefore(LocalDateTime.now())) {
-            throw new ReservationBadRequestException(
-                    ReservationErrorCode.RESERVATION_INVALID_DATE.getMessage()
-            );
+    private void validateDateTime(final Reservation reservation, final LocalTime time) {
+        if (reservation.isPastTime(time, LocalDateTime.now())) {
+            throw new ReservationBadRequestException(ReservationErrorCode.RESERVATION_PAST_DATE.getMessage());
         }
     }
 

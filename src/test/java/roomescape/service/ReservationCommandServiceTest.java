@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.exception.ReservationBadRequestException;
 import roomescape.reservation.exception.ReservationDuplicateException;
-import roomescape.reservation.repository.ReservationRepository;
 import roomescape.reservation.service.ReservationCommandService;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.reservationtime.exception.ReservationTimeNotFoundException;
@@ -23,7 +22,7 @@ import roomescape.theme.domain.Theme;
 class ReservationCommandServiceTest {
 
     private ReservationCommandService reservationCommandService;
-    private ReservationRepository reservationRepository;
+    private FakeReservationRepository reservationRepository;
     private ReservationTimeRepository reservationTimeRepository;
 
     @BeforeEach
@@ -61,7 +60,7 @@ class ReservationCommandServiceTest {
         );
         LocalDate date = LocalDate.now().plusDays(1);
 
-        reservationRepository.save(Reservation.createNew("기존예약", date, time));
+        reservationRepository.save(Reservation.createNew("기존예약", date, time.getId()));
 
         assertThatThrownBy(() -> reservationCommandService.save("신규예약", date, time.getId()))
                 .isInstanceOf(ReservationDuplicateException.class);
@@ -88,7 +87,7 @@ class ReservationCommandServiceTest {
                 ReservationTime.createNew(LocalTime.of(10, 0), theme)
         );
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
 
         reservationCommandService.deleteById(reservation.getId());
 
@@ -103,7 +102,7 @@ class ReservationCommandServiceTest {
                 ReservationTime.createNew(LocalTime.of(10, 0), theme)
         );
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
 
         assertThatThrownBy(() -> reservationCommandService.deleteById(reservation.getId(), "피케이"))
                 .isInstanceOf(ReservationBadRequestException.class);
@@ -120,13 +119,13 @@ class ReservationCommandServiceTest {
                 ReservationTime.createNew(LocalTime.of(11, 0), theme)
         );
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time1));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time1.getId()));
 
         reservationCommandService.update(reservation.getId(), "쿠다", LocalDate.now().plusDays(2), time2.getId());
 
         Reservation updated = reservationRepository.findById(reservation.getId()).orElseThrow();
         assertThat(updated.getDate()).isEqualTo(LocalDate.now().plusDays(2));
-        assertThat(updated.getTime().getId()).isEqualTo(time2.getId());
+        assertThat(updated.getTimeId()).isEqualTo(time2.getId());
     }
 
     @Test
@@ -137,7 +136,7 @@ class ReservationCommandServiceTest {
                 ReservationTime.createNew(LocalTime.of(10, 0), theme)
         );
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
 
         assertThatThrownBy(() -> reservationCommandService.update(reservation.getId(), "피케이",
                 LocalDate.now().minusDays(10), time.getId()))
@@ -155,9 +154,9 @@ class ReservationCommandServiceTest {
                 ReservationTime.createNew(LocalTime.of(11, 0), theme)
         );
         Reservation reservation1 = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time1));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time1.getId()));
         Reservation reservation2 = reservationRepository.save(
-                Reservation.createNew("피케이", LocalDate.now().plusDays(1), time2));
+                Reservation.createNew("피케이", LocalDate.now().plusDays(1), time2.getId()));
 
         assertThatThrownBy(() -> reservationCommandService.update(reservation1.getId(), "쿠다", reservation2.getDate(),
                 time2.getId())).isInstanceOf(ReservationDuplicateException.class);

@@ -2,7 +2,9 @@ package roomescape.service.stub;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.repository.ReservationRepository;
@@ -10,18 +12,11 @@ import roomescape.reservation.repository.ReservationRepository;
 public class FakeReservationRepository implements ReservationRepository {
 
     private final List<Reservation> storage = new ArrayList<>();
+    private final Map<Long, Long> themeIdsByTimeId = new HashMap<>();
     private long sequence = 1L;
 
-    @Override
     public List<Reservation> findAll() {
         return new ArrayList<>(storage);
-    }
-
-    @Override
-    public List<Reservation> findAllByName(final String name) {
-        return storage.stream()
-                .filter(reservation -> reservation.getName().equals(name))
-                .toList();
     }
 
     @Override
@@ -51,29 +46,22 @@ public class FakeReservationRepository implements ReservationRepository {
         return storage.stream()
                 .anyMatch(reservation ->
                         reservation.getDate().equals(date)
-                                && reservation.getTime().getId() == timeId
+                                && reservation.getTimeId() == timeId
                 );
     }
 
     @Override
     public boolean existsByTimeId(final long timeId) {
         return storage.stream()
-                .anyMatch(reservation -> reservation.getTime().getId() == timeId);
+                .anyMatch(reservation -> reservation.getTimeId() == timeId);
     }
 
     @Override
     public boolean existsByThemeId(long themeId) {
         return storage.stream()
-                .anyMatch(reservation -> reservation.getTime().getTheme().getId() == themeId);
-    }
-
-    @Override
-    public List<Long> findAllByDateAndThemeId(final LocalDate date, final long themeId) {
-        return storage.stream()
-                .filter(reservation -> reservation.getDate().equals(date))
-                .filter(reservation -> reservation.getTime().getTheme().getId() == themeId)
-                .map(reservation -> reservation.getTime().getId())
-                .toList();
+                .map(Reservation::getTimeId)
+                .map(themeIdsByTimeId::get)
+                .anyMatch(savedThemeId -> savedThemeId != null && savedThemeId == themeId);
     }
 
     @Override
@@ -85,6 +73,10 @@ public class FakeReservationRepository implements ReservationRepository {
                     storage.remove(r);
                     storage.add(reservation);
                 });
+    }
+
+    public void recordReservationTime(final long timeId, final long themeId) {
+        themeIdsByTimeId.put(timeId, themeId);
     }
 
 }
