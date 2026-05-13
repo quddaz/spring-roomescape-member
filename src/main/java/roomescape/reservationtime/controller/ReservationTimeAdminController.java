@@ -3,7 +3,6 @@ package roomescape.reservationtime.controller;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,8 +13,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import roomescape.reservationtime.controller.dto.ReservationTimeCreateRequest;
 import roomescape.reservationtime.controller.dto.ReservationTimeResponse;
-import roomescape.reservationtime.domain.ReservationTime;
-import roomescape.reservationtime.service.ReservationTimeService;
+import roomescape.reservationtime.service.ReservationTimeCommandService;
+import roomescape.reservationtime.service.ReservationTimeQueryService;
 import roomescape.reservationtime.service.dto.ReservationTimeResult;
 
 @RestController
@@ -23,11 +22,12 @@ import roomescape.reservationtime.service.dto.ReservationTimeResult;
 @RequiredArgsConstructor
 public class ReservationTimeAdminController {
 
-    private final ReservationTimeService reservationTimeService;
+    private final ReservationTimeCommandService reservationTimeCommandService;
+    private final ReservationTimeQueryService reservationTimeQueryService;
 
     @GetMapping("/{themeId}/times")
     public List<ReservationTimeResponse> read(@PathVariable Long themeId) {
-        return reservationTimeService.findAllByThemeId(themeId).stream()
+        return reservationTimeQueryService.findAllByThemeId(themeId).stream()
                 .map(ReservationTimeResponse::from)
                 .toList();
     }
@@ -39,7 +39,7 @@ public class ReservationTimeAdminController {
             @RequestBody ReservationTimeCreateRequest request
     ) {
         ReservationTimeResult reservationTimeResult =
-                reservationTimeService.save(request.startAt(), themeId);
+                reservationTimeCommandService.save(request.startAt(), themeId);
 
         return ReservationTimeResponse.from(reservationTimeResult);
     }
@@ -47,7 +47,7 @@ public class ReservationTimeAdminController {
     @DeleteMapping("/times/{timeId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long timeId) {
-        reservationTimeService.deleteById(timeId);
+        reservationTimeCommandService.deleteById(timeId);
     }
 
 }

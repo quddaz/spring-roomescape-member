@@ -3,7 +3,6 @@ package roomescape.reservation.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,26 +18,13 @@ import roomescape.reservationtime.exception.ReservationTimeNotFoundException;
 import roomescape.reservationtime.repository.ReservationTimeRepository;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional
 @RequiredArgsConstructor
-public class ReservationService {
+public class ReservationCommandService {
 
     private final ReservationRepository reservationRepository;
     private final ReservationTimeRepository reservationTimeRepository;
 
-    public List<ReservationResult> getAll() {
-        return reservationRepository.findAll().stream()
-                .map(ReservationResult::from)
-                .toList();
-    }
-
-    public List<ReservationResult> getAllByName(final String name) {
-        return reservationRepository.findAllByName(name).stream()
-                .map(ReservationResult::from)
-                .toList();
-    }
-
-    @Transactional
     public ReservationResult save(final String name, final LocalDate date, final Long timeId) {
         ReservationTime reservationTime = findReservationTime(timeId);
 
@@ -54,12 +40,10 @@ public class ReservationService {
         return ReservationResult.from(savedReservation);
     }
 
-    @Transactional
     public void deleteById(final long id) {
         reservationRepository.deleteById(id);
     }
 
-    @Transactional
     public void deleteById(final long id, final String name) {
         Reservation reservation = findReservation(id);
 
@@ -68,7 +52,6 @@ public class ReservationService {
         reservationRepository.deleteById(id);
     }
 
-    @Transactional
     public void update(final long id, final String name, final LocalDate date, final Long timeId) {
         Reservation reservation = findReservation(id);
 
@@ -118,5 +101,4 @@ public class ReservationService {
             );
         }
     }
-
 }

@@ -11,7 +11,6 @@ public class FakeThemeRepository implements ThemeRepository {
 
     private final List<Theme> storage = new ArrayList<>();
     private long sequence = 1L;
-    private final List<Theme> popularThemes = List.of();
 
     @Override
     public List<Theme> findAll() {
@@ -48,7 +47,7 @@ public class FakeThemeRepository implements ThemeRepository {
 
     @Override
     public List<Theme> findPopularThemes(final int period, final int limit, final LocalDate now) {
-        return popularThemes.stream().limit(limit).toList();
+        return storage.stream().limit(limit).toList();
     }
 
 }

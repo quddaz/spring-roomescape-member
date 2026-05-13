@@ -1,10 +1,6 @@
 package roomescape.reservationtime.service;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,15 +15,14 @@ import roomescape.theme.exception.ThemeNotFoundException;
 import roomescape.theme.repository.ThemeRepository;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional
 @RequiredArgsConstructor
-public class ReservationTimeService {
+public class ReservationTimeCommandService {
 
     private final ReservationTimeRepository reservationTimeRepository;
     private final ReservationRepository reservationRepository;
     private final ThemeRepository themeRepository;
 
-    @Transactional
     public ReservationTimeResult save(final LocalTime startAt, final Long themeId) {
         validateDuplicate(startAt, themeId);
 
@@ -42,28 +37,9 @@ public class ReservationTimeService {
         return ReservationTimeResult.from(savedReservationTime);
     }
 
-    @Transactional
     public void deleteById(final long timeId) {
         validateReservationExists(timeId);
         reservationTimeRepository.deleteById(timeId);
-    }
-
-    public List<ReservationTimeResult> findAllByThemeId(final long themeId) {
-        return reservationTimeRepository.findAllByThemeId(themeId).stream()
-                .map(ReservationTimeResult::from)
-                .toList();
-    }
-
-    public List<ReservationTimeResult> findAll() {
-        return reservationTimeRepository.findAll().stream()
-                .map(ReservationTimeResult::from)
-                .toList();
-    }
-
-    public List<ReservationTimeResult> findAvailableTimes(final LocalDate date, final long themeId) {
-        return reservationTimeRepository.findAvailableTimes(date, themeId).stream()
-                .map(ReservationTimeResult::from)
-                .toList();
     }
 
     private void validateDuplicate(final LocalTime startAt, final Long themeId) {

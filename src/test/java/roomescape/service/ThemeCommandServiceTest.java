@@ -1,8 +1,10 @@
 package roomescape.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,11 +17,11 @@ import roomescape.theme.domain.Theme;
 import roomescape.theme.exception.ThemeConstraintException;
 import roomescape.theme.exception.ThemeDuplicateException;
 import roomescape.theme.repository.ThemeRepository;
-import roomescape.theme.service.ThemeService;
+import roomescape.theme.service.ThemeCommandService;
 
-class ThemeServiceTest {
+class ThemeCommandServiceTest {
 
-    private ThemeService themeService;
+    private ThemeCommandService themeCommandService;
     private ReservationRepository reservationRepository;
     private ThemeRepository themeRepository;
 
@@ -27,40 +29,49 @@ class ThemeServiceTest {
     void setUp() {
         themeRepository = new FakeThemeRepository();
         reservationRepository = new FakeReservationRepository();
-        themeService = new ThemeService(themeRepository, reservationRepository);
+        themeCommandService = new ThemeCommandService(themeRepository, reservationRepository);
     }
 
     @Test
     @DisplayName("같은 이름 테마 중복 생성 예외")
     void save_whenDuplicateName_throws() {
-        // given
         themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
 
-        // when & then
-        assertThatThrownBy(() -> themeService.save("미술관의 밤", "다른 설명", "thumb2"))
+        assertThatThrownBy(() -> themeCommandService.save("미술관의 밤", "다른 설명", "thumb2"))
                 .isInstanceOf(ThemeDuplicateException.class);
+    }
+
+    @Test
+    @DisplayName("테마 생성 성공")
+    void save_success() {
+        themeCommandService.save("미술관의 밤", "설명", "thumb");
+
+        assertThat(themeRepository.findAll()).hasSize(1);
     }
 
     @Test
     @DisplayName("예약 존재하는 테마 삭제 예외")
     void deleteById_whenExistsReservation_throws() {
-        // given
-        themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
-        themeRepository.save(Theme.createNew("미술관의 밤2", "설명", "thumb"));
+        Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
         reservationRepository.save(
                 Reservation.createNew(
                         "쿠다",
                         LocalDate.now(),
-                        ReservationTime.createNew(
-                                java.time.LocalTime.of(10, 0),
-                                themeRepository.findAll().getFirst()
-                        )
+                        ReservationTime.createNew(LocalTime.of(10, 0), theme)
                 )
         );
 
-        // when & then
-        assertThatThrownBy(() -> themeService.deleteById(themeRepository.findAll().getFirst().getId()))
+        assertThatThrownBy(() -> themeCommandService.deleteById(theme.getId()))
                 .isInstanceOf(ThemeConstraintException.class);
+    }
 
+    @Test
+    @DisplayName("테마 삭제 성공")
+    void deleteById_success() {
+        Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
+
+        themeCommandService.deleteById(theme.getId());
+
+        assertThat(themeRepository.findAll()).isEmpty();
     }
 }

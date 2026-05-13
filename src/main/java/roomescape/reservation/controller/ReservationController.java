@@ -17,7 +17,8 @@ import roomescape.global.auth.annotation.CurrentUser;
 import roomescape.reservation.controller.dto.ReservationCreateRequest;
 import roomescape.reservation.controller.dto.ReservationResponse;
 import roomescape.reservation.controller.dto.ReservationUpdateRequest;
-import roomescape.reservation.service.ReservationService;
+import roomescape.reservation.service.ReservationCommandService;
+import roomescape.reservation.service.ReservationQueryService;
 import roomescape.reservation.service.dto.ReservationResult;
 
 @RestController
@@ -25,12 +26,13 @@ import roomescape.reservation.service.dto.ReservationResult;
 @RequiredArgsConstructor
 public class ReservationController {
 
-    private final ReservationService reservationService;
+    private final ReservationCommandService reservationCommandService;
+    private final ReservationQueryService reservationQueryService;
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<ReservationResponse> readByName(@CurrentUser UserInfo userInfo) {
-        return reservationService.getAllByName(userInfo.name()).stream()
+        return reservationQueryService.getAllByName(userInfo.name()).stream()
                 .map(ReservationResponse::from)
                 .toList();
     }
@@ -38,7 +40,7 @@ public class ReservationController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ReservationResponse create(@RequestBody ReservationCreateRequest request) {
-        ReservationResult reservationResult = reservationService.save(
+        ReservationResult reservationResult = reservationCommandService.save(
                 request.name(),
                 request.date(),
                 request.timeId()
@@ -50,7 +52,7 @@ public class ReservationController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, @CurrentUser UserInfo userInfo) {
-        reservationService.deleteById(id, userInfo.name());
+        reservationCommandService.deleteById(id, userInfo.name());
     }
 
     @PatchMapping("/{id}")
@@ -60,7 +62,7 @@ public class ReservationController {
             @CurrentUser UserInfo userInfo,
             @RequestBody ReservationUpdateRequest request
     ) {
-        reservationService.update(
+        reservationCommandService.update(
                 id,
                 userInfo.name(),
                 request.date(),
