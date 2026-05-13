@@ -27,7 +27,7 @@ class ReservationTest {
         ReservationTime time = ReservationTime.createNew(LocalTime.parse("10:00"), theme);
 
         // when & then
-        assertThatCode(() -> Reservation.createNew(name, date, time.getId()))
+        assertThatCode(() -> Reservation.createNew(name, date, 1L))
                 .doesNotThrowAnyException();
     }
 

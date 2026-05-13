@@ -122,7 +122,7 @@ public class ReservationApiTest {
         acceptanceTestFixture.createReservation("브라운", acceptanceTestFixture.reservationDate(), 1L);
 
         String encodedName = URLEncoder.encode("브라운", StandardCharsets.UTF_8);
-        LocalDate newDate = acceptanceTestFixture.reservationDate().minusDays(2);
+        LocalDate newDate = acceptanceTestFixture.reservationDate().minusDays(10);
         ReservationUpdateRequest request = new ReservationUpdateRequest(newDate, 1L);
         // when & then
         RestAssured.given().log().all()

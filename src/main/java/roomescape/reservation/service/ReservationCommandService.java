@@ -52,17 +52,15 @@ public class ReservationCommandService {
 
     public void update(final long id, final String name, final LocalDate date, final Long timeId) {
         Reservation reservation = findReservation(id);
-
         validateOwner(name, reservation);
 
         ReservationTime reservationTime = findReservationTime(timeId);
-
-        validateDateTime(reservation, reservationTime.getStartAt());
         validateDuplicate(date, timeId);
 
-        reservationRepository.update(
-                reservation.modify(date, timeId)
-        );
+        reservation = reservation.modify(date, timeId);
+        validateDateTime(reservation, reservationTime.getStartAt());
+
+        reservationRepository.update(reservation);
     }
 
     private Reservation findReservation(final long id) {
