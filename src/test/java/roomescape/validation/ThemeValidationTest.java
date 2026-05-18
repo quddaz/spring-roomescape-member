@@ -18,7 +18,6 @@ import roomescape.theme.controller.ThemeAdminController;
 import roomescape.theme.service.ThemeService;
 
 @WebMvcTest(ThemeAdminController.class)
-@Import(GlobalExceptionHandler.class)
 class ThemeValidationTest {
 
     @Autowired

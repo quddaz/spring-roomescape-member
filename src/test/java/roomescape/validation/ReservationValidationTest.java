@@ -23,11 +23,6 @@ import roomescape.reservation.controller.ReservationController;
 import roomescape.reservation.service.ReservationService;
 
 @WebMvcTest(ReservationController.class)
-@Import({
-        GlobalExceptionHandler.class,
-        WebConfig.class,
-        UserArgumentResolver.class
-})
 class ReservationValidationTest {
 
     @Autowired

@@ -18,7 +18,6 @@ import roomescape.reservationtime.controller.ReservationTimeAdminController;
 import roomescape.reservationtime.service.ReservationTimeService;
 
 @WebMvcTest(ReservationTimeAdminController.class)
-@Import(GlobalExceptionHandler.class)
 class ReservationTimeValidationTest {
 
     @Autowired
