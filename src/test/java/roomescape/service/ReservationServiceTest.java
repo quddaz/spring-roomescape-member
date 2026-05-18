@@ -23,6 +23,7 @@ import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.reservationtime.exception.ReservationTimeResourceNotFoundException;
 import roomescape.reservationtime.repository.JdbcReservationTimeRepository;
 import roomescape.reservationtime.repository.ReservationTimeRepository;
+import roomescape.support.time.FixedTimeManager;
 import roomescape.theme.domain.Theme;
 import roomescape.theme.repository.JdbcThemeRepository;
 import roomescape.theme.repository.ThemeRepository;
@@ -67,7 +68,7 @@ class ReservationServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> reservationService.save("쿠다", LocalDate.now().minusDays(1), time.getId()))
+        assertThatThrownBy(() -> reservationService.save("쿠다", LocalDate.from(timeManager.nowDateTime().minusDays(1)), time.getId()))
                 .isInstanceOf(ReservationPastDateException.class)
                 .hasMessageContaining("예약 날짜는 과거일 수 없습니다.");
     }

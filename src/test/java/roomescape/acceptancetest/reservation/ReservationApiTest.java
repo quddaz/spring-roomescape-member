@@ -116,7 +116,7 @@ public class ReservationApiTest {
         acceptanceTestFixture.createReservationTime("15:40", 1L);
         acceptanceTestFixture.createReservation("브라운", acceptanceTestFixture.reservationDate(), 1L);
 
-        LocalDate newDate = acceptanceTestFixture.reservationDate().minusDays(2);
+        LocalDate newDate = LocalDate.of(2026, 5,14);
         ReservationUpdateRequest request = new ReservationUpdateRequest(newDate, 1L);
         // when & then
         RestAssured.given().log().all()
