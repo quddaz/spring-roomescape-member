@@ -1,10 +1,9 @@
 package roomescape.theme.domain;
 
-import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import roomescape.theme.exception.ThemeErrorCode;
+import roomescape.global.domain.DomainPreconditions;
 import roomescape.theme.exception.ThemeValidationException;
 
 @Getter
@@ -33,15 +32,8 @@ public class Theme {
     }
 
     private void validateName(final String name) {
-        List<String> errors = new ArrayList<>();
-
-        if (name == null || name.isBlank()) {
-            errors.add(ThemeErrorCode.THEME_NAME_NOT_BLANK.getMessage());
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ThemeValidationException(errors);
-        }
+        DomainPreconditions.requireNonNull(name, new ThemeValidationException(List.of("테마의 이름은 비어있을 수 없습니다.")));
+        DomainPreconditions.require(!name.isBlank(), new ThemeValidationException(List.of("테마의 이름은 비어있을 수 없습니다.")));
     }
 
     public Theme withId(final long id) {

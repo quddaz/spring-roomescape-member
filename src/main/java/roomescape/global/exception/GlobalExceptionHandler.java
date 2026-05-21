@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
             NoResourceFoundException e
     ) {
         return ErrorResponse.of(
-                GlobalErrorCode.NOT_FOUND.getMessage()
+                "잘못된 경로입니다."
         );
     }
 
@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
     ) {
         log.info("ValidationException 발생: {}", e.getMessage());
         return ErrorResponse.of(
-                GlobalErrorCode.BAD_REQUEST.getMessage(),
+                "잘못된 요청입니다",
                 e.getErrors()
         );
     }
@@ -98,7 +98,7 @@ public class GlobalExceptionHandler {
                 .toList();
 
         return ErrorResponse.of(
-                GlobalErrorCode.BAD_REQUEST.getMessage(),
+                "잘못된 요청입니다",
                 errors
         );
     }
@@ -111,7 +111,7 @@ public class GlobalExceptionHandler {
         log.info("MethodArgumentTypeMismatchException 발생: {}", e.getMessage());
 
         return ErrorResponse.of(
-                GlobalErrorCode.BAD_REQUEST.getMessage(),
+                "잘못된 요청입니다",
                 List.of(e.getName() + "은(는) 올바른 타입이 아닙니다.")
         );
     }
@@ -122,7 +122,7 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException e
     ) {
         log.info("HttpMessageNotReadableException 발생: {}", e.getMessage());
-        return ErrorResponse.of(GlobalErrorCode.INVALID_JSON.getMessage());
+        return ErrorResponse.of("잘못된 JSON 형식입니다.");
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
@@ -132,7 +132,7 @@ public class GlobalExceptionHandler {
     ) {
         log.info("MissingServletRequestParameterException 발생: {}", e.getMessage());
         return ErrorResponse.of(
-                GlobalErrorCode.BAD_REQUEST.getMessage(),
+                "잘못된 요청입니다",
                 List.of(e.getParameterName() + " 파라미터가 누락되었습니다.")
         );
     }
@@ -154,9 +154,7 @@ public class GlobalExceptionHandler {
             AuthenticationFailedException e
     ) {
         log.warn("AuthenticationFailedException 발생: {}", e.getMessage(), e);
-        return ErrorResponse.of(
-                GlobalErrorCode.AUTHENTICATION_FAILED.getMessage()
-        );
+        return ErrorResponse.of(e.getMessage());
     }
 
     @ExceptionHandler(UnexpectedUpdateCountException.class)
@@ -175,7 +173,7 @@ public class GlobalExceptionHandler {
     ) {
         log.error("DataIntegrityViolationException 발생", e);
 
-        return ErrorResponse.of(GlobalErrorCode.BAD_REQUEST.getMessage());
+        return ErrorResponse.of("잘못된 요청입니다");
     }
 
     @ExceptionHandler(Exception.class)
@@ -186,7 +184,7 @@ public class GlobalExceptionHandler {
         log.error("Unexpected Exception 발생", e);
 
         return ErrorResponse.of(
-                GlobalErrorCode.INTERNAL_SERVER_ERROR.getMessage()
+                "서버 내부 오류가 발생했습니다."
         );
     }
 

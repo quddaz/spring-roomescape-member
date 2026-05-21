@@ -4,6 +4,6 @@ import roomescape.global.exception.exception.ResourceNotFoundException;
 
 public class ReservationResourceNotFoundException extends ResourceNotFoundException {
     public ReservationResourceNotFoundException() {
-        super(ReservationErrorCode.RESERVATION_NOT_FOUND.getMessage());
+        super("찾는 예약이 없습니다.");
     }
 }

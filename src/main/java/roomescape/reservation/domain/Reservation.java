@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import roomescape.reservation.exception.ReservationErrorCode;
+import roomescape.global.domain.DomainPreconditions;
 import roomescape.reservation.exception.ReservationPastDateException;
 import roomescape.reservation.exception.ReservationPermissionDeniedException;
 import roomescape.reservation.exception.ReservationValidationException;
@@ -53,26 +53,21 @@ public class Reservation {
     }
 
     private static void validateName(final String name, final List<String> errors) {
-        if (name == null || name.isBlank()) {
-            errors.add(ReservationErrorCode.RESERVATION_NAME_NOT_BLANK.getMessage());
+        DomainPreconditions.collectIfNull(name, errors, "예약자 이름은 비어있을 수 없습니다.");
+        if (name == null) {
             return;
         }
 
-        if (name.length() > NAME_MAX_LENGTH) {
-            errors.add(ReservationErrorCode.RESERVATION_NAME_TOO_LONG.getMessage());
-        }
+        DomainPreconditions.collectIfFalse(name.length() <= NAME_MAX_LENGTH, errors, "예약자 이름은 최대 10자까지 입력할 수 있습니다.");
+        DomainPreconditions.collectIfFalse(!name.isBlank(), errors, "예약자 이름은 비어있을 수 없습니다.");
     }
 
     private static void validateDate(final LocalDate date, final List<String> errors) {
-        if (date == null) {
-            errors.add(ReservationErrorCode.RESERVATION_DATE_NOT_NULL.getMessage());
-        }
+        DomainPreconditions.collectIfNull(date, errors, "예약 날짜는 비어있을 수 없습니다.");
     }
 
     private static void validateTimeId(final Long timeId, final List<String> errors) {
-        if (timeId == null) {
-            errors.add(ReservationErrorCode.RESERVATION_TIME_NOT_NULL.getMessage());
-        }
+        DomainPreconditions.collectIfNull(timeId, errors, "예약 시간 정보가 없습니다.");
     }
 
     public Reservation withId(final long id) {
@@ -89,7 +84,7 @@ public class Reservation {
 
         if (reservationDateTime.isBefore(now)) {
             throw new ReservationPastDateException(
-                    ReservationErrorCode.RESERVATION_PAST_DATE.getMessage()
+                    "예약 날짜는 과거일 수 없습니다."
             );
         }
     }
@@ -97,7 +92,7 @@ public class Reservation {
     public void validateOwner(String requesterName) {
         if (!this.name.equals(requesterName)) {
             throw new ReservationPermissionDeniedException(
-                    ReservationErrorCode.RESERVATION_NOT_OWNER.getMessage()
+                    "예약자만 예약을 수정하거나 취소할 수 있습니다."
             );
         }
     }

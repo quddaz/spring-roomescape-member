@@ -1,11 +1,10 @@
 package roomescape.reservationtime.domain;
 
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import roomescape.reservationtime.exception.ReservationTimeErrorCode;
+import roomescape.global.domain.DomainPreconditions;
 import roomescape.reservationtime.exception.ReservationTimeValidationException;
 import roomescape.theme.domain.Theme;
 
@@ -34,15 +33,7 @@ public class ReservationTime {
     }
 
     private void validateStartAt(LocalTime startAt) {
-        List<String> errors = new ArrayList<>();
-
-        if (startAt == null) {
-            errors.add(ReservationTimeErrorCode.RESERVATION_TIME_NOT_FOUND.getMessage());
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ReservationTimeValidationException(errors);
-        }
+        DomainPreconditions.requireNonNull(startAt, new ReservationTimeValidationException(List.of("예약 시간은 비어있을 수 없습니다.")));
     }
 
     public ReservationTime withId(final long id) {

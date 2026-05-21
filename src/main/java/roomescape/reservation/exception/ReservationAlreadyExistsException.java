@@ -4,6 +4,6 @@ import roomescape.global.exception.exception.AlreadyExistsException;
 
 public class ReservationAlreadyExistsException extends AlreadyExistsException {
     public ReservationAlreadyExistsException() {
-        super(ReservationErrorCode.RESERVATION_DUPLICATE.getMessage());
+        super("이미 같은 날짜와 시간에 예약이 존재합니다.");
     }
 }

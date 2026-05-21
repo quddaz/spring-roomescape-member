@@ -4,6 +4,6 @@ import roomescape.global.exception.exception.ResourceNotFoundException;
 
 public class ThemeResourceNotFoundException extends ResourceNotFoundException {
     public ThemeResourceNotFoundException() {
-        super(ThemeErrorCode.THEME_NOT_FOUND.getMessage());
+        super("찾는 테마가 없습니다.");
     }
 }
