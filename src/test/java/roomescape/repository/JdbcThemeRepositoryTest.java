@@ -114,18 +114,18 @@ class JdbcThemeRepositoryTest {
                 ReservationTime.createNew(LocalTime.parse("12:00"), thirdTheme)
         );
 
-        jdbcReservationRepository.save(Reservation.createNew("쿠다", referenceDate.minusDays(1), firstThemeTime.getId()));
-        jdbcReservationRepository.save(Reservation.createNew("아루", referenceDate.minusDays(2), firstThemeTime.getId()));
-        jdbcReservationRepository.save(Reservation.createNew("도기", referenceDate.minusDays(3), firstThemeTime.getId()));
+        jdbcReservationRepository.save(Reservation.createNew("쿠다", referenceDate.minusDays(1), firstThemeTime, firstTheme.getId()));
+        jdbcReservationRepository.save(Reservation.createNew("아루", referenceDate.minusDays(2), firstThemeTime, firstTheme.getId()));
+        jdbcReservationRepository.save(Reservation.createNew("도기", referenceDate.minusDays(3), firstThemeTime, firstTheme.getId()));
 
         jdbcReservationRepository.save(
-                Reservation.createNew("포비", referenceDate.minusDays(1), secondThemeTime.getId()));
+                Reservation.createNew("포비", referenceDate.minusDays(1), secondThemeTime, secondTheme.getId()));
         jdbcReservationRepository.save(
-                Reservation.createNew("솔라", referenceDate.minusDays(2), secondThemeTime.getId()));
+                Reservation.createNew("솔라", referenceDate.minusDays(2), secondThemeTime, secondTheme.getId()));
 
-        jdbcReservationRepository.save(Reservation.createNew("레오", referenceDate.minusDays(1), thirdThemeTime.getId()));
+        jdbcReservationRepository.save(Reservation.createNew("레오", referenceDate.minusDays(1), thirdThemeTime, thirdTheme.getId()));
         jdbcReservationRepository.save(
-                Reservation.createNew("오래된예약", referenceDate.minusDays(10), thirdThemeTime.getId()));
+                Reservation.createNew("오래된예약", referenceDate.minusDays(10), thirdThemeTime, thirdTheme.getId()));
 
         // when
         List<Theme> popularThemes = jdbcThemeRepository.findPopularThemes(7, 2, referenceDate);
@@ -155,18 +155,18 @@ class JdbcThemeRepositoryTest {
 
         // 집계 대상
         jdbcReservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.parse("2026-11-07"), firstThemeTime.getId())
+                Reservation.createNew("쿠다", LocalDate.parse("2026-11-07"), firstThemeTime, firstTheme.getId())
         );
         jdbcReservationRepository.save(
-                Reservation.createNew("아루", LocalDate.parse("2026-11-06"), firstThemeTime.getId())
+                Reservation.createNew("아루", LocalDate.parse("2026-11-06"), firstThemeTime, firstTheme.getId())
         );
 
         // 제외 대상
         jdbcReservationRepository.save(
-                Reservation.createNew("포비", today, secondThemeTime.getId())
+                Reservation.createNew("포비", today, secondThemeTime, secondTheme.getId())
         );
         jdbcReservationRepository.save(
-                Reservation.createNew("피케이", LocalDate.parse("2026-10-08"), secondThemeTime.getId())
+                Reservation.createNew("피케이", LocalDate.parse("2026-10-08"), secondThemeTime, secondTheme.getId())
         );
 
         // when

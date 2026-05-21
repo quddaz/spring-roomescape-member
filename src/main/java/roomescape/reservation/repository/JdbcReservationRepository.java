@@ -12,6 +12,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.service.dto.ReservationResult;
+import roomescape.reservationtime.domain.ReservationTime;
 
 @Repository
 public class JdbcReservationRepository implements ReservationRepository {
@@ -35,7 +36,10 @@ public class JdbcReservationRepository implements ReservationRepository {
             resultSet.getLong("id"),
             resultSet.getString("reservation_name"),
             resultSet.getDate("date").toLocalDate(),
-            resultSet.getLong("time_id"),
+            ReservationTime.of(
+                    resultSet.getLong("time_id"),
+                    resultSet.getTime("start_at").toLocalTime()
+            ),
             resultSet.getLong("theme_id")
     );
 
@@ -44,7 +48,10 @@ public class JdbcReservationRepository implements ReservationRepository {
                     resultSet.getLong("id"),
                     resultSet.getString("reservation_name"),
                     resultSet.getDate("date").toLocalDate(),
-                    resultSet.getLong("time_id"),
+                    ReservationTime.of(
+                            resultSet.getLong("time_id"),
+                            resultSet.getTime("start_at").toLocalTime()
+                    ),
                     resultSet.getLong("theme_id")
             ),
             roomescape.theme.domain.Theme.of(

@@ -17,6 +17,7 @@ import roomescape.theme.exception.ThemeResourceNotFoundException;
 import roomescape.theme.repository.ThemeRepository;
 import roomescape.reservationtime.exception.ReservationTimeResourceNotFoundException;
 import roomescape.reservationtime.repository.ReservationTimeRepository;
+import roomescape.reservationtime.domain.ReservationTime;
 
 @Service
 @Transactional(readOnly = true)
@@ -43,8 +44,8 @@ public class ReservationService {
         Theme theme = findTheme(themeId);
         validateDuplicate(date, timeId, themeId);
 
-        Reservation reservation = Reservation.createNew(name, date, reservationTime.getId(), theme.getId());
-        reservation.validateNotPast(reservationTime.getStartAt(), timeManager.nowDateTime());
+        Reservation reservation = Reservation.createNew(name, date, reservationTime, theme.getId());
+        reservation.validateNotPast(timeManager.nowDateTime());
 
         Reservation savedReservation = reservationRepository.save(reservation);
 
@@ -72,8 +73,8 @@ public class ReservationService {
         Theme theme = findTheme(themeId);
         validateDuplicate(date, timeId, themeId);
 
-        reservation = reservation.modify(date, reservationTime.getId(), theme.getId());
-        reservation.validateNotPast(reservationTime.getStartAt(), timeManager.nowDateTime());
+        reservation = reservation.modify(date, reservationTime, theme.getId());
+        reservation.validateNotPast(timeManager.nowDateTime());
 
         int updateRowCount = reservationRepository.update(reservation);
         validateSingleRowUpdate(updateRowCount);

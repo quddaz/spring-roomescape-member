@@ -65,7 +65,8 @@ class ThemeServiceTest {
                 Reservation.createNew(
                         "쿠다",
                         LocalDate.now(),
-                        reservationTime.getId()
+                        reservationTime,
+                        theme.getId()
                 )
         );
 

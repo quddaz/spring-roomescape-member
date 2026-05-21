@@ -48,13 +48,13 @@ class ReservationServiceTest {
         reservationTimeRepository = new JdbcReservationTimeRepository(jdbcTemplate);
         themeRepository = new JdbcThemeRepository(jdbcTemplate);
 
-        reservationService = new ReservationService(reservationRepository, reservationTimeRepository, timeManager);
+        reservationService = new ReservationService(reservationRepository, reservationTimeRepository, timeManager, themeRepository);
     }
 
     @Test
     @DisplayName("없는 예약 시간 ID 예약 예외")
     void save_whenTimeNotExists_throws() {
-        assertThatThrownBy(() -> reservationService.save("쿠다", LocalDate.now().plusDays(1), 999L))
+        assertThatThrownBy(() -> reservationService.save("쿠다", LocalDate.now().plusDays(1), 999L, 1L))
                 .isInstanceOf(ReservationTimeResourceNotFoundException.class);
     }
 
@@ -68,7 +68,7 @@ class ReservationServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> reservationService.save("쿠다", LocalDate.from(timeManager.nowDateTime().minusDays(1)), time.getId()))
+        assertThatThrownBy(() -> reservationService.save("쿠다", LocalDate.from(timeManager.nowDateTime().minusDays(1)), time.getId(), theme.getId()))
                 .isInstanceOf(ReservationPastDateException.class)
                 .hasMessageContaining("예약 날짜는 과거일 수 없습니다.");
     }
@@ -83,10 +83,10 @@ class ReservationServiceTest {
         );
         LocalDate date = LocalDate.now().plusDays(1);
 
-        reservationRepository.save(Reservation.createNew("기존예약", date, time.getId()));
+        reservationRepository.save(Reservation.createNew("기존예약", date, time, theme.getId()));
 
         // when & then
-        assertThatThrownBy(() -> reservationService.save("신규예약", date, time.getId()))
+        assertThatThrownBy(() -> reservationService.save("신규예약", date, time.getId(), theme.getId()))
                 .isInstanceOf(ReservationAlreadyExistsException.class)
                 .hasMessageContaining("이미 같은 날짜와 시간에 예약이 존재합니다.");
     }
@@ -101,7 +101,7 @@ class ReservationServiceTest {
         );
 
         //when
-        ReservationResult saved = reservationService.save("쿠다", LocalDate.now().plusDays(1), time.getId());
+        ReservationResult saved = reservationService.save("쿠다", LocalDate.now().plusDays(1), time.getId(), theme.getId());
 
         //then
         assertThat(saved.id()).isNotNull();
@@ -119,7 +119,7 @@ class ReservationServiceTest {
         );
 
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time, theme.getId()));
 
         // when
         reservationService.deleteById(reservation.getId());
@@ -138,7 +138,7 @@ class ReservationServiceTest {
         );
 
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time, theme.getId()));
 
         // when & then
         assertThatThrownBy(() -> reservationService.deleteById(reservation.getId(), "피케이"))
@@ -159,7 +159,7 @@ class ReservationServiceTest {
         );
 
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time1.getId()));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time1, theme.getId()));
 
         // when
         reservationService.update(reservation.getId(), "쿠다", LocalDate.now().plusDays(2), time2.getId());
@@ -180,7 +180,7 @@ class ReservationServiceTest {
         );
 
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time, theme.getId()));
 
         // when & then
         assertThatThrownBy(
@@ -199,7 +199,7 @@ class ReservationServiceTest {
         );
 
         Reservation reservation = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time, theme.getId()));
 
         // when & then
         assertThatThrownBy(() -> reservationService.update(reservation.getId(), "쿠다", LocalDate.now().minusDays(10),
@@ -221,9 +221,9 @@ class ReservationServiceTest {
         );
 
         Reservation reservation1 = reservationRepository.save(
-                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time1.getId()));
+                Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time1, theme.getId()));
         Reservation reservation2 = reservationRepository.save(
-                Reservation.createNew("피케이", LocalDate.now().plusDays(1), time2.getId()));
+                Reservation.createNew("피케이", LocalDate.now().plusDays(1), time2, theme.getId()));
 
         // when & then
         assertThatThrownBy(() -> reservationService.update(reservation1.getId(), "쿠다", reservation2.getDate(),

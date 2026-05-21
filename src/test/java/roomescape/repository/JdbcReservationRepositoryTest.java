@@ -48,7 +48,7 @@ class JdbcReservationRepositoryTest {
 
         ReservationTime reservationTime = jdbcReservationTimeRepository.save(ReservationTime.createNew(time, theme));
 
-        Reservation reservation = Reservation.createNew(name, date, reservationTime.getId());
+        Reservation reservation = Reservation.createNew(name, date, reservationTime, theme.getId());
         //when
         Reservation result = jdbcReservationRepository.save(reservation);
         Reservation saved = jdbcReservationRepository.findById(result.getId())
@@ -67,11 +67,11 @@ class JdbcReservationRepositoryTest {
         Theme theme = createTheme("미술관의 밤");
 
         ReservationTime reservationTime = jdbcReservationTimeRepository.save(ReservationTime.createNew(time, theme));
-        jdbcReservationRepository.save(Reservation.createNew("쿠다", date, reservationTime.getId()));
+        jdbcReservationRepository.save(Reservation.createNew("쿠다", date, reservationTime, theme.getId()));
 
         // when & then
         assertThatThrownBy(
-                () -> jdbcReservationRepository.save(Reservation.createNew("아루", date, reservationTime.getId())))
+                () -> jdbcReservationRepository.save(Reservation.createNew("아루", date, reservationTime, theme.getId())))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -84,7 +84,7 @@ class JdbcReservationRepositoryTest {
         Theme theme = createTheme("미술관의 밤");
 
         ReservationTime reservationTime = jdbcReservationTimeRepository.save(ReservationTime.createNew(time, theme));
-        jdbcReservationRepository.save(Reservation.createNew("쿠다", date, reservationTime.getId()));
+        jdbcReservationRepository.save(Reservation.createNew("쿠다", date, reservationTime, theme.getId()));
 
         //when
         List<ReservationResult> reservationResults = jdbcReservationRepository.findAll();
@@ -103,7 +103,7 @@ class JdbcReservationRepositoryTest {
 
         ReservationTime reservationTime = jdbcReservationTimeRepository.save(ReservationTime.createNew(time, theme));
 
-        jdbcReservationRepository.save(Reservation.createNew("쿠다", date, reservationTime.getId()));
+        jdbcReservationRepository.save(Reservation.createNew("쿠다", date, reservationTime, theme.getId()));
 
         int beforeSize = jdbcReservationRepository.findAll().size();
 
@@ -132,7 +132,7 @@ class JdbcReservationRepositoryTest {
         ReservationTime reservationTime = jdbcReservationTimeRepository.save(ReservationTime.createNew(time, theme));
 
         Reservation reservation = jdbcReservationRepository.save(
-                Reservation.createNew("쿠다", date, reservationTime.getId()));
+                Reservation.createNew("쿠다", date, reservationTime, theme.getId()));
 
         // when
         LocalDate newDate = date.plusDays(1);
@@ -140,7 +140,7 @@ class JdbcReservationRepositoryTest {
         ReservationTime newReservationTime = jdbcReservationTimeRepository.save(
                 ReservationTime.createNew(newTime, theme));
 
-        jdbcReservationRepository.update(reservation.modify(newDate, newReservationTime.getId()));
+        jdbcReservationRepository.update(reservation.modify(newDate, newReservationTime, theme.getId()));
 
         Reservation updated = jdbcReservationRepository.findById(reservation.getId())
                 .orElseThrow();
