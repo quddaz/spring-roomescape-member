@@ -14,7 +14,7 @@ public interface ReservationRepository {
 
     int update(Reservation reservation);
 
-    boolean existsByDateAndTimeId(LocalDate date, long timeId);
+    boolean existsByDateAndTimeIdAndThemeId(LocalDate date, long timeId, long themeId);
 
     boolean existsByTimeId(long timeId);
 

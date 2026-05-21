@@ -62,7 +62,8 @@ public class ReservationController {
         ReservationResult reservationResult = reservationService.save(
                 request.name(),
                 request.date(),
-                request.timeId()
+                request.timeId(),
+                request.themeId()
         );
 
         URI location = URI.create("/reservations/" + reservationResult.id());
@@ -105,7 +106,8 @@ public class ReservationController {
                 id,
                 userInfo.name(),
                 request.date(),
-                request.timeId()
+                request.timeId(),
+                request.themeId()
         );
     }
 

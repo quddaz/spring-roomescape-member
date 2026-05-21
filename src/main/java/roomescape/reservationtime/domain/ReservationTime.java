@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import roomescape.global.domain.DomainPreconditions;
 import roomescape.reservationtime.exception.ReservationTimeValidationException;
-import roomescape.theme.domain.Theme;
 
 @Getter
 @EqualsAndHashCode(of = "id")
@@ -14,22 +13,21 @@ public class ReservationTime {
 
     private final Long id;
     private final LocalTime startAt;
-    private final Theme theme;
+    
 
-    private ReservationTime(final Long id, final LocalTime startAt, final Theme theme) {
+    private ReservationTime(final Long id, final LocalTime startAt) {
         validateStartAt(startAt);
 
         this.id = id;
         this.startAt = startAt;
-        this.theme = theme;
     }
 
-    public static ReservationTime createNew(final LocalTime startAt, final Theme theme) {
-        return new ReservationTime(null, startAt, theme);
+    public static ReservationTime createNew(final LocalTime startAt) {
+        return new ReservationTime(null, startAt);
     }
 
-    public static ReservationTime of(final long id, final LocalTime startAt, final Theme theme) {
-        return new ReservationTime(id, startAt, theme);
+    public static ReservationTime of(final long id, final LocalTime startAt) {
+        return new ReservationTime(id, startAt);
     }
 
     private void validateStartAt(LocalTime startAt) {
@@ -37,7 +35,7 @@ public class ReservationTime {
     }
 
     public ReservationTime withId(final long id) {
-        return new ReservationTime(id, this.startAt, this.theme);
+        return new ReservationTime(id, this.startAt);
     }
 
 }

@@ -22,30 +22,33 @@ public class Reservation {
     private final String name;
     private final LocalDate date;
     private final Long timeId;
+    private final Long themeId;
 
-    private Reservation(final Long id, final String name, final LocalDate date, final Long timeId) {
+    private Reservation(final Long id, final String name, final LocalDate date, final Long timeId, final Long themeId) {
         this.id = id;
         this.name = name;
         this.date = date;
         this.timeId = timeId;
+        this.themeId = themeId;
     }
 
-    public static Reservation createNew(final String name, final LocalDate date, final Long timeId) {
-        validate(name, date, timeId);
-        return new Reservation(null, name, date, timeId);
+    public static Reservation createNew(final String name, final LocalDate date, final Long timeId, final Long themeId) {
+        validate(name, date, timeId, themeId);
+        return new Reservation(null, name, date, timeId, themeId);
     }
 
-    public static Reservation of(final long id, final String name, final LocalDate date, final Long timeId) {
-        validate(name, date, timeId);
-        return new Reservation(id, name, date, timeId);
+    public static Reservation of(final long id, final String name, final LocalDate date, final Long timeId, final Long themeId) {
+        validate(name, date, timeId, themeId);
+        return new Reservation(id, name, date, timeId, themeId);
     }
 
-    private static void validate(final String name, final LocalDate date, final Long timeId) {
+    private static void validate(final String name, final LocalDate date, final Long timeId, final Long themeId) {
         List<String> errors = new ArrayList<>();
 
         validateName(name, errors);
         validateDate(date, errors);
         validateTimeId(timeId, errors);
+        validateThemeId(themeId, errors);
 
         if (!errors.isEmpty()) {
             throw new ReservationValidationException(errors);
@@ -70,13 +73,17 @@ public class Reservation {
         DomainPreconditions.collectIfNull(timeId, errors, "예약 시간 정보가 없습니다.");
     }
 
-    public Reservation withId(final long id) {
-        return new Reservation(id, this.name, this.date, this.timeId);
+    private static void validateThemeId(final Long themeId, final List<String> errors) {
+        DomainPreconditions.collectIfNull(themeId, errors, "예약 테마 정보가 없습니다.");
     }
 
-    public Reservation modify(final LocalDate newDate, final Long newTimeId) {
-        validate(name, newDate, newTimeId);
-        return new Reservation(id, name, newDate, newTimeId);
+    public Reservation withId(final long id) {
+        return new Reservation(id, this.name, this.date, this.timeId, this.themeId);
+    }
+
+    public Reservation modify(final LocalDate newDate, final Long newTimeId, final Long newThemeId) {
+        validate(name, newDate, newTimeId, newThemeId);
+        return new Reservation(id, name, newDate, newTimeId, newThemeId);
     }
 
     public void validateNotPast(LocalTime time, LocalDateTime now) {

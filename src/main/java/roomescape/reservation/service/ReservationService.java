@@ -12,7 +12,9 @@ import roomescape.reservation.exception.ReservationResourceNotFoundException;
 import roomescape.reservation.exception.ReservationUnexpectedUpdateCountException;
 import roomescape.reservation.repository.ReservationRepository;
 import roomescape.reservation.service.dto.ReservationResult;
-import roomescape.reservationtime.domain.ReservationTime;
+import roomescape.theme.domain.Theme;
+import roomescape.theme.exception.ThemeResourceNotFoundException;
+import roomescape.theme.repository.ThemeRepository;
 import roomescape.reservationtime.exception.ReservationTimeResourceNotFoundException;
 import roomescape.reservationtime.repository.ReservationTimeRepository;
 
@@ -24,6 +26,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final ReservationTimeRepository reservationTimeRepository;
     private final TimeManager timeManager;
+    private final ThemeRepository themeRepository;
 
     public List<ReservationResult> getAll() {
         return reservationRepository.findAll();
@@ -34,17 +37,18 @@ public class ReservationService {
     }
 
     @Transactional
-    public ReservationResult save(final String name, final LocalDate date, final Long timeId) {
+    public ReservationResult save(final String name, final LocalDate date, final Long timeId, final Long themeId) {
         ReservationTime reservationTime = findReservationTime(timeId);
 
-        validateDuplicate(date, timeId);
+        Theme theme = findTheme(themeId);
+        validateDuplicate(date, timeId, themeId);
 
-        Reservation reservation = Reservation.createNew(name, date, reservationTime.getId());
+        Reservation reservation = Reservation.createNew(name, date, reservationTime.getId(), theme.getId());
         reservation.validateNotPast(reservationTime.getStartAt(), timeManager.nowDateTime());
 
         Reservation savedReservation = reservationRepository.save(reservation);
 
-        return ReservationResult.from(savedReservation, reservationTime);
+        return ReservationResult.from(savedReservation, theme, reservationTime.getStartAt());
     }
 
     @Transactional
@@ -60,14 +64,15 @@ public class ReservationService {
     }
 
     @Transactional
-    public void update(final long id, final String name, final LocalDate date, final Long timeId) {
+    public void update(final long id, final String name, final LocalDate date, final Long timeId, final Long themeId) {
         Reservation reservation = findReservation(id);
         reservation.validateOwner(name);
 
         ReservationTime reservationTime = findReservationTime(timeId);
-        validateDuplicate(date, timeId);
+        Theme theme = findTheme(themeId);
+        validateDuplicate(date, timeId, themeId);
 
-        reservation = reservation.modify(date, reservationTime.getId());
+        reservation = reservation.modify(date, reservationTime.getId(), theme.getId());
         reservation.validateNotPast(reservationTime.getStartAt(), timeManager.nowDateTime());
 
         int updateRowCount = reservationRepository.update(reservation);
@@ -84,8 +89,13 @@ public class ReservationService {
                 .orElseThrow(ReservationTimeResourceNotFoundException::new);
     }
 
-    private void validateDuplicate(final LocalDate date, final Long timeId) {
-        if (reservationRepository.existsByDateAndTimeId(date, timeId)) {
+    private Theme findTheme(final Long themeId) {
+        return themeRepository.findById(themeId)
+                .orElseThrow(ThemeResourceNotFoundException::new);
+    }
+
+    private void validateDuplicate(final LocalDate date, final Long timeId, final Long themeId) {
+        if (reservationRepository.existsByDateAndTimeIdAndThemeId(date, timeId, themeId)) {
             throw new ReservationAlreadyExistsException();
         }
     }

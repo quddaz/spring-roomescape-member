@@ -12,9 +12,6 @@ import roomescape.reservationtime.exception.ReservationTimeAlreadyExistsExceptio
 import roomescape.reservationtime.exception.ReservationTimeInUseException;
 import roomescape.reservationtime.repository.ReservationTimeRepository;
 import roomescape.reservationtime.service.dto.ReservationTimeResult;
-import roomescape.theme.domain.Theme;
-import roomescape.theme.exception.ThemeResourceNotFoundException;
-import roomescape.theme.repository.ThemeRepository;
 
 @Service
 @Transactional(readOnly = true)
@@ -23,16 +20,12 @@ public class ReservationTimeService {
 
     private final ReservationTimeRepository reservationTimeRepository;
     private final ReservationRepository reservationRepository;
-    private final ThemeRepository themeRepository;
 
     @Transactional
-    public ReservationTimeResult save(final LocalTime startAt, final Long themeId) {
-        validateDuplicate(startAt, themeId);
+    public ReservationTimeResult save(final LocalTime startAt) {
+        validateDuplicate(startAt);
 
-        Theme theme = themeRepository.findById(themeId)
-                .orElseThrow(ThemeResourceNotFoundException::new);
-
-        ReservationTime reservationTime = ReservationTime.createNew(startAt, theme);
+        ReservationTime reservationTime = ReservationTime.createNew(startAt);
 
         ReservationTime savedReservationTime =
                 reservationTimeRepository.save(reservationTime);
@@ -46,8 +39,8 @@ public class ReservationTimeService {
         reservationTimeRepository.deleteById(timeId);
     }
 
-    public List<ReservationTimeResult> findAllByThemeId(final long themeId) {
-        return reservationTimeRepository.findAllByThemeId(themeId).stream()
+    public List<ReservationTimeResult> findAll() {
+        return reservationTimeRepository.findAll().stream()
                 .map(ReservationTimeResult::from)
                 .toList();
     }
@@ -58,8 +51,8 @@ public class ReservationTimeService {
                 .toList();
     }
 
-    private void validateDuplicate(final LocalTime startAt, final Long themeId) {
-        if (reservationTimeRepository.existsByStartAtAndThemeId(startAt, themeId)) {
+    private void validateDuplicate(final LocalTime startAt) {
+        if (reservationTimeRepository.existsByStartAt(startAt)) {
             throw new ReservationTimeAlreadyExistsException();
         }
     }
