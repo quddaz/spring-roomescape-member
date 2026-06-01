@@ -1,7 +1,6 @@
 package roomescape.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -10,11 +9,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.repository.JdbcReservationRepository;
 import roomescape.reservation.service.dto.ReservationResult;
+import roomescape.reservation.service.dto.WaitingReservationResult;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.reservationtime.repository.JdbcReservationTimeRepository;
 import roomescape.theme.domain.Theme;
@@ -59,8 +58,8 @@ class JdbcReservationRepositoryTest {
     }
 
     @Test
-    @DisplayName("예약 저장 중복 예외")
-    void reservation_save_whenDuplicate_throws() {
+    @DisplayName("예약된 슬롯에 예약 저장 시 대기 생성")
+    void reservation_save_whenDuplicate_saveWaiting() {
         // given
         LocalDate date = LocalDate.parse("2026-08-06");
         LocalTime time = LocalTime.parse("10:00");
@@ -69,10 +68,16 @@ class JdbcReservationRepositoryTest {
         ReservationTime reservationTime = jdbcReservationTimeRepository.save(ReservationTime.createNew(time, theme));
         jdbcReservationRepository.save(Reservation.createNew("쿠다", date, reservationTime.getId()));
 
-        // when & then
-        assertThatThrownBy(
-                () -> jdbcReservationRepository.save(Reservation.createNew("아루", date, reservationTime.getId())))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        // when
+        jdbcReservationRepository.save(Reservation.createNew("아루", date, reservationTime.getId()));
+
+        // then
+        List<ReservationResult> waitingReservations = jdbcReservationRepository.findAllByName("아루");
+        assertThat(waitingReservations).hasSize(1);
+        assertThat(waitingReservations.getFirst().confirmed()).isFalse();
+        assertThat(waitingReservations.getFirst())
+                .isInstanceOfSatisfying(WaitingReservationResult.class,
+                        waitingReservation -> assertThat(waitingReservation.waitingRank()).isEqualTo(1));
     }
 
     @Test

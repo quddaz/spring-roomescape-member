@@ -20,32 +20,52 @@ public class Reservation {
 
     private final Long id;
     private final String name;
-    private final LocalDate date;
-    private final Long timeId;
+    private final LocalDateTime createdAt;
+    private final ReservationSlot slot;
 
-    private Reservation(final Long id, final String name, final LocalDate date, final Long timeId) {
+    private Reservation(final Long id, final String name, final LocalDateTime createdAt,
+                        final ReservationSlot slot) {
+        validate(name, slot);
         this.id = id;
         this.name = name;
-        this.date = date;
-        this.timeId = timeId;
+        this.createdAt = createdAt;
+        this.slot = slot;
     }
 
     public static Reservation createNew(final String name, final LocalDate date, final Long timeId) {
-        validate(name, date, timeId);
-        return new Reservation(null, name, date, timeId);
+        return new Reservation(null, name, null, ReservationSlot.createNew(timeId, date));
     }
 
-    public static Reservation of(final long id, final String name, final LocalDate date, final Long timeId) {
-        validate(name, date, timeId);
-        return new Reservation(id, name, date, timeId);
+    public static Reservation of(final Long id, final String name, final LocalDateTime createdAt,
+                                 final ReservationSlot slot) {
+        return new Reservation(id, name, createdAt, slot);
     }
 
-    private static void validate(final String name, final LocalDate date, final Long timeId) {
+    public Reservation withIdAndSlot(final long id, final ReservationSlot slot) {
+        return new Reservation(id, name, createdAt, slot);
+    }
+
+    public Reservation modify(final LocalDate newDate, final Long newTimeId) {
+        return new Reservation(id, name, createdAt, ReservationSlot.createNew(newTimeId, newDate));
+    }
+
+    public LocalDate getDate() {
+        return slot.getDate();
+    }
+
+    public Long getTimeId() {
+        return slot.getTimeId();
+    }
+
+    public Long getSlotId() {
+        return slot.getId();
+    }
+
+    private static void validate(final String name, final ReservationSlot slot) {
         List<String> errors = new ArrayList<>();
 
         validateName(name, errors);
-        validateDate(date, errors);
-        validateTimeId(timeId, errors);
+        DomainPreconditions.collectIfNull(slot, errors, "예약 슬롯 정보가 없습니다.");
 
         if (!errors.isEmpty()) {
             throw new ReservationValidationException(errors);
@@ -62,25 +82,8 @@ public class Reservation {
         DomainPreconditions.collectIfFalse(!name.isBlank(), errors, "예약자 이름은 비어있을 수 없습니다.");
     }
 
-    private static void validateDate(final LocalDate date, final List<String> errors) {
-        DomainPreconditions.collectIfNull(date, errors, "예약 날짜는 비어있을 수 없습니다.");
-    }
-
-    private static void validateTimeId(final Long timeId, final List<String> errors) {
-        DomainPreconditions.collectIfNull(timeId, errors, "예약 시간 정보가 없습니다.");
-    }
-
-    public Reservation withId(final long id) {
-        return new Reservation(id, this.name, this.date, this.timeId);
-    }
-
-    public Reservation modify(final LocalDate newDate, final Long newTimeId) {
-        validate(name, newDate, newTimeId);
-        return new Reservation(id, name, newDate, newTimeId);
-    }
-
     public void validateNotPast(LocalTime time, LocalDateTime now) {
-        LocalDateTime reservationDateTime = LocalDateTime.of(date, time);
+        LocalDateTime reservationDateTime = LocalDateTime.of(getDate(), time);
 
         if (reservationDateTime.isBefore(now)) {
             throw new ReservationPastDateException(

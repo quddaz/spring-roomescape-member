@@ -5,25 +5,29 @@ import java.time.LocalTime;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservationtime.domain.ReservationTime;
 
-public record ReservationResult(
-        Long id,
-        String name,
-        LocalDate date,
-        Long timeId,
-        LocalTime startAt,
-        Long themeId,
-        String themeName
-) {
+public sealed interface ReservationResult permits ConfirmedReservationResult, WaitingReservationResult {
 
-    public static ReservationResult from(Reservation reservation, ReservationTime reservationTime) {
-        return new ReservationResult(
-                reservation.getId(),
-                reservation.getName(),
-                reservation.getDate(),
-                reservation.getTimeId(),
-                reservationTime.getStartAt(),
-                reservationTime.getTheme().getId(),
-                reservationTime.getTheme().getName()
-        );
+    Long id();
+
+    boolean confirmed();
+
+    String name();
+
+    LocalDate date();
+
+    Long timeId();
+
+    LocalTime startAt();
+
+    Long themeId();
+
+    String themeName();
+
+    static ReservationResult confirmed(Reservation reservation, ReservationTime reservationTime) {
+        return ConfirmedReservationResult.from(reservation, reservationTime);
+    }
+
+    static ReservationResult waiting(Reservation reservation, ReservationTime reservationTime, Integer waitingRank) {
+        return WaitingReservationResult.from(reservation, reservationTime, waitingRank);
     }
 }

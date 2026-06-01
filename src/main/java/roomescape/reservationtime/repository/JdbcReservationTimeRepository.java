@@ -88,11 +88,13 @@ public class JdbcReservationTimeRepository implements ReservationTimeRepository 
     @Override
     public List<ReservationTime> findAvailableTimes(final LocalDate date, final Long themeId) {
         String sql = RESERVATION_TIME_BASE_SELECT + """
-                LEFT JOIN reservation r
-                       ON r.time_id = rt.id
-                      AND r.date = ?
+                LEFT JOIN reservation_slot rs
+                       ON rs.time_id = rt.id
+                      AND rs.date = ?
+                LEFT JOIN reservation_confirmed rc
+                       ON rc.reservation_slot_id = rs.id
                 WHERE rt.theme_id = ?
-                  AND r.id IS NULL
+                  AND rc.id IS NULL
                 ORDER BY rt.start_at
                 """;
 

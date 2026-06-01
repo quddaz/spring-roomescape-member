@@ -17,8 +17,10 @@ import roomescape.reservation.exception.ReservationPastDateException;
 import roomescape.reservation.exception.ReservationPermissionDeniedException;
 import roomescape.reservation.repository.JdbcReservationRepository;
 import roomescape.reservation.repository.ReservationRepository;
+import roomescape.reservation.service.ReservationPolicy;
 import roomescape.reservation.service.ReservationService;
 import roomescape.reservation.service.dto.ReservationResult;
+import roomescape.reservation.service.dto.WaitingReservationResult;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.reservationtime.exception.ReservationTimeResourceNotFoundException;
 import roomescape.reservationtime.repository.JdbcReservationTimeRepository;
@@ -48,7 +50,12 @@ class ReservationServiceTest {
         reservationTimeRepository = new JdbcReservationTimeRepository(jdbcTemplate);
         themeRepository = new JdbcThemeRepository(jdbcTemplate);
 
-        reservationService = new ReservationService(reservationRepository, reservationTimeRepository, timeManager);
+        reservationService = new ReservationService(
+                reservationRepository,
+                reservationTimeRepository,
+                timeManager,
+                new ReservationPolicy()
+        );
     }
 
     @Test
@@ -74,8 +81,8 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("같은 날짜/시간 중복 예약 예외 발생")
-    void save_whenDuplicateDateTime_throws() {
+    @DisplayName("같은 날짜/시간 예약이 있으면 대기 예약 생성")
+    void save_whenDuplicateDateTime_saveWaiting() {
         // given
         Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
         ReservationTime time = reservationTimeRepository.save(
@@ -84,6 +91,49 @@ class ReservationServiceTest {
         LocalDate date = LocalDate.now().plusDays(1);
 
         reservationRepository.save(Reservation.createNew("기존예약", date, time.getId()));
+
+        // when
+        ReservationResult waiting = reservationService.save("신규예약", date, time.getId());
+
+        // then
+        assertThat(waiting.confirmed()).isFalse();
+        assertThat(waiting).isInstanceOfSatisfying(WaitingReservationResult.class,
+                waitingReservation -> assertThat(waitingReservation.waitingRank()).isEqualTo(1));
+    }
+
+    @Test
+    @DisplayName("같은 이름의 확정 예약이 있는 슬롯도 대기 예약 생성")
+    void save_whenSameNameConfirmedReservationExists_saveWaiting() {
+        // given
+        Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
+        ReservationTime time = reservationTimeRepository.save(
+                ReservationTime.createNew(LocalTime.of(10, 0), theme)
+        );
+        LocalDate date = LocalDate.now().plusDays(1);
+
+        reservationRepository.save(Reservation.createNew("쿠다", date, time.getId()));
+
+        // when
+        ReservationResult waiting = reservationService.save("쿠다", date, time.getId());
+
+        // then
+        assertThat(waiting.confirmed()).isFalse();
+        assertThat(waiting).isInstanceOfSatisfying(WaitingReservationResult.class,
+                waitingReservation -> assertThat(waitingReservation.waitingRank()).isEqualTo(1));
+    }
+
+    @Test
+    @DisplayName("같은 사용자가 같은 날짜/시간에 중복 대기 신청하면 예외 발생")
+    void save_whenSameUserDuplicateWaiting_throws() {
+        // given
+        Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
+        ReservationTime time = reservationTimeRepository.save(
+                ReservationTime.createNew(LocalTime.of(10, 0), theme)
+        );
+        LocalDate date = LocalDate.now().plusDays(1);
+
+        reservationRepository.save(Reservation.createNew("기존예약", date, time.getId()));
+        reservationService.save("신규예약", date, time.getId());
 
         // when & then
         assertThatThrownBy(() -> reservationService.save("신규예약", date, time.getId()))
@@ -202,7 +252,8 @@ class ReservationServiceTest {
                 Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
 
         // when & then
-        assertThatThrownBy(() -> reservationService.update(reservation.getId(), "쿠다", LocalDate.now().minusDays(10),
+        assertThatThrownBy(() -> reservationService.update(reservation.getId(), "쿠다",
+                LocalDate.from(timeManager.nowDateTime().minusDays(1)),
                 time.getId()))
                 .isInstanceOf(ReservationPastDateException.class)
                 .hasMessageContaining("예약 날짜는 과거일 수 없습니다.");

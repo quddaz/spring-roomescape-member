@@ -18,13 +18,36 @@ CREATE TABLE reservation_time
     UNIQUE (theme_id, start_at)
 );
 
-CREATE TABLE reservation
+CREATE TABLE reservation_slot
 (
     id      BIGINT       NOT NULL AUTO_INCREMENT,
-    name    VARCHAR(255) NOT NULL,
     date    DATE         NOT NULL,
     time_id BIGINT       NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (time_id) REFERENCES reservation_time (id),
     UNIQUE (date, time_id)
+);
+
+CREATE TABLE reservation_confirmed
+(
+    id                  BIGINT       NOT NULL AUTO_INCREMENT,
+    name                VARCHAR(255) NOT NULL,
+    reservation_slot_id BIGINT NOT NULL,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    FOREIGN KEY (reservation_slot_id) REFERENCES reservation_slot (id),
+    UNIQUE (reservation_slot_id)
+);
+
+CREATE TABLE reservation_waiting
+(
+    id                  BIGINT       NOT NULL AUTO_INCREMENT,
+    name                VARCHAR(255) NOT NULL,
+    reservation_slot_id BIGINT NOT NULL,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    FOREIGN KEY (reservation_slot_id) REFERENCES reservation_slot (id),
+    UNIQUE (reservation_slot_id, name)
 );

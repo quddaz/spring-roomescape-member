@@ -57,10 +57,20 @@ public final class AcceptanceTestFixture {
             final Long timeId
     ) {
         jdbcTemplate.update(
-                "INSERT INTO reservation (name, date, time_id) VALUES (?, ?, ?)",
-                name,
+                "INSERT INTO reservation_slot (date, time_id) VALUES (?, ?)",
                 date,
                 timeId
+        );
+        Long slotId = jdbcTemplate.queryForObject(
+                "SELECT id FROM reservation_slot WHERE date = ? AND time_id = ?",
+                Long.class,
+                date,
+                timeId
+        );
+        jdbcTemplate.update(
+                "INSERT INTO reservation_confirmed (name, reservation_slot_id) VALUES (?, ?)",
+                name,
+                slotId
         );
     }
 

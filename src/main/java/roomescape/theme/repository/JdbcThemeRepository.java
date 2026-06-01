@@ -89,10 +89,11 @@ public class JdbcThemeRepository implements ThemeRepository {
                        t.name,
                        t.description,
                        t.thumbnail_url
-                FROM reservation r
-                INNER JOIN reservation_time rt ON r.time_id = rt.id
+                FROM reservation_confirmed r
+                INNER JOIN reservation_slot rs ON r.reservation_slot_id = rs.id
+                INNER JOIN reservation_time rt ON rs.time_id = rt.id
                 INNER JOIN theme t ON rt.theme_id = t.id
-                WHERE r.date >= ? AND r.date <= ?
+                WHERE rs.date >= ? AND rs.date <= ?
                 GROUP BY t.id, t.name, t.description, t.thumbnail_url
                 ORDER BY COUNT(*) DESC, t.id ASC
                 LIMIT ?

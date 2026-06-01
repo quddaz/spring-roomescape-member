@@ -7,9 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.global.time.TimeManager;
 import roomescape.reservation.domain.Reservation;
-import roomescape.reservation.exception.ReservationAlreadyExistsException;
 import roomescape.reservation.exception.ReservationResourceNotFoundException;
-import roomescape.reservation.exception.ReservationUnexpectedUpdateCountException;
 import roomescape.reservation.repository.ReservationRepository;
 import roomescape.reservation.service.dto.ReservationResult;
 import roomescape.reservationtime.domain.ReservationTime;
@@ -24,6 +22,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final ReservationTimeRepository reservationTimeRepository;
     private final TimeManager timeManager;
+    private final ReservationPolicy reservationPolicy;
 
     public List<ReservationResult> getAll() {
         return reservationRepository.findAll();
@@ -37,14 +36,21 @@ public class ReservationService {
     public ReservationResult save(final String name, final LocalDate date, final Long timeId) {
         ReservationTime reservationTime = findReservationTime(timeId);
 
-        validateDuplicate(date, timeId);
-
         Reservation reservation = Reservation.createNew(name, date, reservationTime.getId());
-        reservation.validateNotPast(reservationTime.getStartAt(), timeManager.nowDateTime());
+        reservationPolicy.validateForSave(
+                reservationRepository.existsWaitingByNameAndDateAndTimeId(name, date, timeId),
+                reservation,
+                reservationTime,
+                timeManager.nowDateTime()
+        );
 
+        boolean alreadyReserved = reservationRepository.existsByDateAndTimeId(date, timeId);
         Reservation savedReservation = reservationRepository.save(reservation);
 
-        return ReservationResult.from(savedReservation, reservationTime);
+        if (alreadyReserved) {
+            return findSavedWaiting(name, date, timeId, savedReservation.getId());
+        }
+        return ReservationResult.confirmed(savedReservation, reservationTime);
     }
 
     @Transactional
@@ -54,24 +60,29 @@ public class ReservationService {
 
     @Transactional
     public void deleteById(final long id, final String name) {
-        Reservation reservation = findReservation(id);
-        reservation.validateOwner(name);
-        reservationRepository.deleteById(id);
+        if (reservationRepository.existsByIdAndName(id, name)) {
+            reservationRepository.deleteById(id, name);
+            return;
+        }
+        reservationPolicy.validateForDelete(findReservation(id), name);
     }
 
     @Transactional
     public void update(final long id, final String name, final LocalDate date, final Long timeId) {
         Reservation reservation = findReservation(id);
-        reservation.validateOwner(name);
 
         ReservationTime reservationTime = findReservationTime(timeId);
-        validateDuplicate(date, timeId);
+        Reservation modifiedReservation = reservation.modify(date, reservationTime.getId());
+        reservationPolicy.validateForUpdate(
+                modifiedReservation,
+                name,
+                reservationRepository.existsConfirmedByDateAndTimeIdExcludingId(id, date, timeId),
+                reservationTime,
+                timeManager.nowDateTime()
+        );
 
-        reservation = reservation.modify(date, reservationTime.getId());
-        reservation.validateNotPast(reservationTime.getStartAt(), timeManager.nowDateTime());
-
-        int updateRowCount = reservationRepository.update(reservation);
-        validateSingleRowUpdate(updateRowCount);
+        int updateRowCount = reservationRepository.update(modifiedReservation);
+        reservationPolicy.validateSingleRowUpdate(updateRowCount);
     }
 
     private Reservation findReservation(final long id) {
@@ -84,16 +95,13 @@ public class ReservationService {
                 .orElseThrow(ReservationTimeResourceNotFoundException::new);
     }
 
-    private void validateDuplicate(final LocalDate date, final Long timeId) {
-        if (reservationRepository.existsByDateAndTimeId(date, timeId)) {
-            throw new ReservationAlreadyExistsException();
-        }
-    }
-
-    private void validateSingleRowUpdate(final int updateRowCount) {
-        if (updateRowCount != 1) {
-            throw new ReservationUnexpectedUpdateCountException(updateRowCount);
-        }
+    private ReservationResult findSavedWaiting(final String name, final LocalDate date, final Long timeId,
+                                               final Long reservationId) {
+        return reservationRepository.findWaitingResultById(reservationId)
+                .filter(reservation -> reservation.name().equals(name)
+                        && reservation.date().equals(date)
+                        && reservation.timeId().equals(timeId))
+                .orElseThrow(ReservationResourceNotFoundException::new);
     }
 
 }
