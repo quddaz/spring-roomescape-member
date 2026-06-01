@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -134,17 +133,9 @@ public class JdbcReservationRepository implements ReservationRepository {
     };
 
     private final JdbcTemplate jdbcTemplate;
-    private final ReservationSlotRepository reservationSlotRepository;
 
     public JdbcReservationRepository(final JdbcTemplate jdbcTemplate) {
-        this(jdbcTemplate, new JdbcReservationSlotRepository(jdbcTemplate));
-    }
-
-    @Autowired
-    public JdbcReservationRepository(final JdbcTemplate jdbcTemplate,
-                                     final ReservationSlotRepository reservationSlotRepository) {
         this.jdbcTemplate = jdbcTemplate;
-        this.reservationSlotRepository = reservationSlotRepository;
     }
 
     @Override
@@ -167,18 +158,7 @@ public class JdbcReservationRepository implements ReservationRepository {
     }
 
     @Override
-    public Reservation save(final Reservation reservation) {
-        ReservationSlot slot = reservationSlotRepository.findOrCreate(reservation.getDate(), reservation.getTimeId());
-
-        if (existsConfirmedBySlotId(slot.getId())) {
-            return saveWaiting(reservation, slot);
-        }
-        return saveConfirmed(reservation, slot);
-    }
-
-    @Override
-    public int update(final Reservation reservation) {
-        ReservationSlot slot = reservationSlotRepository.findOrCreate(reservation.getDate(), reservation.getTimeId());
+    public int update(final Reservation reservation, final ReservationSlot slot) {
         final String sql = "UPDATE reservation_confirmed SET reservation_slot_id = ? WHERE id = ?";
 
         return jdbcTemplate.update(sql, slot.getId(), reservation.getId());
@@ -331,13 +311,15 @@ public class JdbcReservationRepository implements ReservationRepository {
         return jdbcTemplate.query(sql, waitingResultRowMapper, name);
     }
 
-    private Reservation saveConfirmed(final Reservation reservation, final ReservationSlot slot) {
+    @Override
+    public Reservation saveConfirmed(final Reservation reservation, final ReservationSlot slot) {
         String sql = "INSERT INTO reservation_confirmed (name, reservation_slot_id) VALUES (?, ?)";
         long id = insertReservation(sql, reservation.getName(), slot.getId());
         return Reservation.of(id, reservation.getName(), reservation.getCreatedAt(), slot);
     }
 
-    private Reservation saveWaiting(final Reservation reservation, final ReservationSlot slot) {
+    @Override
+    public Reservation saveWaiting(final Reservation reservation, final ReservationSlot slot) {
         String sql = "INSERT INTO reservation_waiting (name, reservation_slot_id) VALUES (?, ?)";
         long id = insertReservation(sql, reservation.getName(), slot.getId());
         return Reservation.of(id, reservation.getName(), reservation.getCreatedAt(), slot);

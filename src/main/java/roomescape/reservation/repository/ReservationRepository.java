@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import roomescape.reservation.domain.Reservation;
+import roomescape.reservation.domain.ReservationSlot;
 import roomescape.reservation.service.dto.ReservationResult;
 
 public interface ReservationRepository {
@@ -12,9 +13,11 @@ public interface ReservationRepository {
 
     void deleteById(long id, String name);
 
-    Reservation save(Reservation reservation);
+    Reservation saveConfirmed(Reservation reservation, ReservationSlot slot);
 
-    int update(Reservation reservation);
+    Reservation saveWaiting(Reservation reservation, ReservationSlot slot);
+
+    int update(Reservation reservation, ReservationSlot slot);
 
     boolean existsByDateAndTimeId(LocalDate date, long timeId);
 

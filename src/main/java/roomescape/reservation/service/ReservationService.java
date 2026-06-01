@@ -7,8 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.global.time.TimeManager;
 import roomescape.reservation.domain.Reservation;
+import roomescape.reservation.domain.ReservationSlot;
 import roomescape.reservation.exception.ReservationResourceNotFoundException;
 import roomescape.reservation.repository.ReservationRepository;
+import roomescape.reservation.repository.ReservationSlotRepository;
 import roomescape.reservation.service.dto.ReservationResult;
 import roomescape.reservationtime.domain.ReservationTime;
 import roomescape.reservationtime.exception.ReservationTimeResourceNotFoundException;
@@ -20,6 +22,7 @@ import roomescape.reservationtime.repository.ReservationTimeRepository;
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
+    private final ReservationSlotRepository reservationSlotRepository;
     private final ReservationTimeRepository reservationTimeRepository;
     private final TimeManager timeManager;
     private final ReservationPolicy reservationPolicy;
@@ -45,11 +48,13 @@ public class ReservationService {
         );
 
         boolean alreadyReserved = reservationRepository.existsByDateAndTimeId(date, timeId);
-        Reservation savedReservation = reservationRepository.save(reservation);
+        ReservationSlot slot = reservationSlotRepository.findOrCreate(date, reservationTime.getId());
 
         if (alreadyReserved) {
+            Reservation savedReservation = reservationRepository.saveWaiting(reservation, slot);
             return findSavedWaiting(name, date, timeId, savedReservation.getId());
         }
+        Reservation savedReservation = reservationRepository.saveConfirmed(reservation, slot);
         return ReservationResult.confirmed(savedReservation, reservationTime);
     }
 
@@ -73,6 +78,7 @@ public class ReservationService {
 
         ReservationTime reservationTime = findReservationTime(timeId);
         Reservation modifiedReservation = reservation.modify(date, reservationTime.getId());
+        ReservationSlot slot = reservationSlotRepository.findOrCreate(date, reservationTime.getId());
         reservationPolicy.validateForUpdate(
                 modifiedReservation,
                 name,
@@ -81,7 +87,7 @@ public class ReservationService {
                 timeManager.nowDateTime()
         );
 
-        int updateRowCount = reservationRepository.update(modifiedReservation);
+        int updateRowCount = reservationRepository.update(modifiedReservation, slot);
         reservationPolicy.validateSingleRowUpdate(updateRowCount);
     }
 
