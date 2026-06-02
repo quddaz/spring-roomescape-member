@@ -9,9 +9,11 @@ import roomescape.reservation.service.dto.ReservationResult;
 
 public interface ReservationRepository {
 
-    void deleteById(long id);
+    void deleteByAdmin(long id);
 
-    void deleteById(long id, String name);
+    void deleteByUser(long id, String name);
+
+    Reservation save(Reservation reservation);
 
     Reservation saveConfirmed(Reservation reservation, ReservationSlot slot);
 
@@ -37,6 +39,10 @@ public interface ReservationRepository {
 
     Optional<Reservation> findById(long id);
 
+    Optional<Reservation> findFirstWaitingBySlotId(long slotId);
+
     Optional<ReservationResult> findWaitingResultById(long id);
+
+    void deleteWaitingById(long id);
 
 }

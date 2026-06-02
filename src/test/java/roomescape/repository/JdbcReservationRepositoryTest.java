@@ -118,7 +118,7 @@ class JdbcReservationRepositoryTest {
                 .orElseThrow();
 
         // when
-        jdbcReservationRepository.deleteById(result.id());
+        jdbcReservationRepository.deleteByAdmin(result.id());
 
         // then
         int afterSize = jdbcReservationRepository.findAll().size();

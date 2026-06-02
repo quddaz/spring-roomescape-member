@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,9 @@ import roomescape.reservation.exception.ReservationAlreadyExistsException;
 import roomescape.reservation.exception.ReservationPastDateException;
 import roomescape.reservation.exception.ReservationPermissionDeniedException;
 import roomescape.reservation.repository.JdbcReservationRepository;
+import roomescape.reservation.repository.JdbcReservationSlotRepository;
 import roomescape.reservation.repository.ReservationRepository;
+import roomescape.reservation.repository.ReservationSlotRepository;
 import roomescape.reservation.service.ReservationPolicy;
 import roomescape.reservation.service.ReservationService;
 import roomescape.reservation.service.dto.ReservationResult;
@@ -41,17 +44,20 @@ class ReservationServiceTest {
 
     private ReservationService reservationService;
     private ReservationRepository reservationRepository;
+    private ReservationSlotRepository reservationSlotRepository;
     private ReservationTimeRepository reservationTimeRepository;
     private ThemeRepository themeRepository;
 
     @BeforeEach
     void setUp() {
         reservationRepository = new JdbcReservationRepository(jdbcTemplate);
+        reservationSlotRepository = new JdbcReservationSlotRepository(jdbcTemplate);
         reservationTimeRepository = new JdbcReservationTimeRepository(jdbcTemplate);
         themeRepository = new JdbcThemeRepository(jdbcTemplate);
 
         reservationService = new ReservationService(
                 reservationRepository,
+                reservationSlotRepository,
                 reservationTimeRepository,
                 timeManager,
                 new ReservationPolicy()
@@ -172,10 +178,39 @@ class ReservationServiceTest {
                 Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
 
         // when
-        reservationService.deleteById(reservation.getId());
+        reservationService.deleteByAdmin(reservation.getId());
 
         // then
         assertThat(reservationRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("확정 예약 삭제 시 대기 1순위 예약 자동 승급")
+    void deleteById_whenWaitingExists_promotesFirstWaiting() {
+        // given
+        Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
+        ReservationTime time = reservationTimeRepository.save(
+                ReservationTime.createNew(LocalTime.of(10, 0), theme)
+        );
+        LocalDate date = LocalDate.now().plusDays(1);
+
+        Reservation confirmed = reservationRepository.save(Reservation.createNew("확정", date, time.getId()));
+        reservationService.save("대기1", date, time.getId());
+        reservationService.save("대기2", date, time.getId());
+
+        // when
+        reservationService.deleteByUser(confirmed.getId(), "확정");
+
+        // then
+        List<ReservationResult> promotedReservations = reservationRepository.findAllByName("대기1");
+        List<ReservationResult> waitingReservations = reservationRepository.findAllByName("대기2");
+
+        assertThat(promotedReservations).hasSize(1);
+        assertThat(promotedReservations.getFirst().confirmed()).isTrue();
+        assertThat(waitingReservations).hasSize(1);
+        assertThat(waitingReservations.getFirst())
+                .isInstanceOfSatisfying(WaitingReservationResult.class,
+                        waitingReservation -> assertThat(waitingReservation.waitingRank()).isEqualTo(1));
     }
 
     @Test
@@ -191,7 +226,7 @@ class ReservationServiceTest {
                 Reservation.createNew("쿠다", LocalDate.now().plusDays(1), time.getId()));
 
         // when & then
-        assertThatThrownBy(() -> reservationService.deleteById(reservation.getId(), "피케이"))
+        assertThatThrownBy(() -> reservationService.deleteByUser(reservation.getId(), "피케이"))
                 .isInstanceOf(ReservationPermissionDeniedException.class)
                 .hasMessageContaining("예약자만 예약을 수정하거나 취소할 수 있습니다.");
     }
@@ -218,6 +253,40 @@ class ReservationServiceTest {
         Reservation updated = reservationRepository.findById(reservation.getId()).orElseThrow();
         assertThat(updated.getDate()).isEqualTo(LocalDate.now().plusDays(2));
         assertThat(updated.getTimeId()).isEqualTo(time2.getId());
+    }
+
+    @Test
+    @DisplayName("확정 예약 수정 시 기존 슬롯의 대기 1순위 예약 자동 승급")
+    void update_whenWaitingExists_promotesFirstWaitingInOriginalSlot() {
+        // given
+        Theme theme = themeRepository.save(Theme.createNew("미술관의 밤", "설명", "thumb"));
+        ReservationTime time1 = reservationTimeRepository.save(
+                ReservationTime.createNew(LocalTime.of(10, 0), theme)
+        );
+        ReservationTime time2 = reservationTimeRepository.save(
+                ReservationTime.createNew(LocalTime.of(11, 0), theme)
+        );
+        LocalDate date = LocalDate.now().plusDays(1);
+
+        Reservation confirmed = reservationRepository.save(Reservation.createNew("확정", date, time1.getId()));
+        reservationService.save("대기1", date, time1.getId());
+        reservationService.save("대기2", date, time1.getId());
+
+        // when
+        reservationService.update(confirmed.getId(), "확정", date, time2.getId());
+
+        // then
+        Reservation updated = reservationRepository.findById(confirmed.getId()).orElseThrow();
+        List<ReservationResult> promotedReservations = reservationRepository.findAllByName("대기1");
+        List<ReservationResult> waitingReservations = reservationRepository.findAllByName("대기2");
+
+        assertThat(updated.getTimeId()).isEqualTo(time2.getId());
+        assertThat(promotedReservations).hasSize(1);
+        assertThat(promotedReservations.getFirst().confirmed()).isTrue();
+        assertThat(waitingReservations).hasSize(1);
+        assertThat(waitingReservations.getFirst())
+                .isInstanceOfSatisfying(WaitingReservationResult.class,
+                        waitingReservation -> assertThat(waitingReservation.waitingRank()).isEqualTo(1));
     }
 
     @Test

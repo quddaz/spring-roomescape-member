@@ -139,14 +139,14 @@ public class JdbcReservationRepository implements ReservationRepository {
     }
 
     @Override
-    public void deleteById(final long id) {
+    public void deleteByAdmin(final long id) {
         if (jdbcTemplate.update("DELETE FROM reservation_confirmed WHERE id = ?", id) == 0) {
-            jdbcTemplate.update("DELETE FROM reservation_waiting WHERE id = ?", id);
+            deleteWaitingById(id);
         }
     }
 
     @Override
-    public void deleteById(final long id, final String name) {
+    public void deleteByUser(final long id, final String name) {
         int confirmedDeleteCount = jdbcTemplate.update(
                 "DELETE FROM reservation_confirmed WHERE id = ? AND name = ?",
                 id,
@@ -296,6 +296,27 @@ public class JdbcReservationRepository implements ReservationRepository {
                 .findFirst();
     }
 
+    @Override
+    public Optional<Reservation> findFirstWaitingBySlotId(final long slotId) {
+        String sql = """
+                SELECT rw.id,
+                       rw.name AS reservation_name,
+                       rw.created_at,
+                       rs.id AS slot_id,
+                       rs.date,
+                       rs.time_id
+                FROM reservation_waiting AS rw
+                INNER JOIN reservation_slot AS rs ON rw.reservation_slot_id = rs.id
+                WHERE rw.reservation_slot_id = ?
+                ORDER BY rw.created_at, rw.id
+                LIMIT 1
+                """;
+
+        return jdbcTemplate.query(sql, confirmedReservationRowMapper, slotId)
+                .stream()
+                .findFirst();
+    }
+
     private List<ReservationResult> findAllConfirmedResults() {
         String sql = CONFIRMED_SELECT + " ORDER BY date, start_at";
         return jdbcTemplate.query(sql, confirmedResultRowMapper);
@@ -312,6 +333,15 @@ public class JdbcReservationRepository implements ReservationRepository {
     }
 
     @Override
+    public Reservation save(final Reservation reservation) {
+        ReservationSlot slot = findOrCreateSlot(reservation.getDate(), reservation.getTimeId());
+        if (existsByDateAndTimeId(reservation.getDate(), reservation.getTimeId())) {
+            return saveWaiting(reservation, slot);
+        }
+        return saveConfirmed(reservation, slot);
+    }
+
+    @Override
     public Reservation saveConfirmed(final Reservation reservation, final ReservationSlot slot) {
         String sql = "INSERT INTO reservation_confirmed (name, reservation_slot_id) VALUES (?, ?)";
         long id = insertReservation(sql, reservation.getName(), slot.getId());
@@ -323,6 +353,10 @@ public class JdbcReservationRepository implements ReservationRepository {
         String sql = "INSERT INTO reservation_waiting (name, reservation_slot_id) VALUES (?, ?)";
         long id = insertReservation(sql, reservation.getName(), slot.getId());
         return Reservation.of(id, reservation.getName(), reservation.getCreatedAt(), slot);
+    }
+
+    public int update(final Reservation reservation) {
+        return update(reservation, findOrCreateSlot(reservation.getDate(), reservation.getTimeId()));
     }
 
     private long insertReservation(final String sql, final String name, final Long slotId) {
@@ -342,9 +376,48 @@ public class JdbcReservationRepository implements ReservationRepository {
         return key.longValue();
     }
 
-    private boolean existsConfirmedBySlotId(final Long slotId) {
-        String sql = "SELECT EXISTS (SELECT 1 FROM reservation_confirmed WHERE reservation_slot_id = ?)";
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(sql, Boolean.class, slotId));
+    private ReservationSlot findOrCreateSlot(final LocalDate date, final Long timeId) {
+        return findSlotByDateAndTimeId(date, timeId)
+                .orElseGet(() -> saveSlot(ReservationSlot.createNew(timeId, date)));
+    }
+
+    private Optional<ReservationSlot> findSlotByDateAndTimeId(final LocalDate date, final Long timeId) {
+        String sql = "SELECT id, date, time_id FROM reservation_slot WHERE date = ? AND time_id = ?";
+        return jdbcTemplate.query(
+                        sql,
+                        (resultSet, rowNum) -> ReservationSlot.of(
+                                resultSet.getLong("id"),
+                                resultSet.getLong("time_id"),
+                                resultSet.getDate("date").toLocalDate()
+                        ),
+                        Date.valueOf(date),
+                        timeId
+                )
+                .stream()
+                .findFirst();
+    }
+
+    private ReservationSlot saveSlot(final ReservationSlot slot) {
+        String sql = "INSERT INTO reservation_slot (date, time_id) VALUES (?, ?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbcTemplate.update(connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement(sql, new String[]{"id"});
+            preparedStatement.setDate(1, Date.valueOf(slot.getDate()));
+            preparedStatement.setLong(2, slot.getTimeId());
+            return preparedStatement;
+        }, keyHolder);
+
+        Number key = keyHolder.getKey();
+        if (key == null) {
+            throw new IllegalStateException("[ERROR] 예약 슬롯 ID를 생성하지 못했습니다.");
+        }
+        return slot.withId(key.longValue());
+    }
+
+    @Override
+    public void deleteWaitingById(final long id) {
+        jdbcTemplate.update("DELETE FROM reservation_waiting WHERE id = ?", id);
     }
 
     private static LocalDateTime toLocalDateTime(final Timestamp timestamp) {

@@ -2,6 +2,7 @@ package roomescape.reservation.service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,14 +60,20 @@ public class ReservationService {
     }
 
     @Transactional
-    public void deleteById(final long id) {
-        reservationRepository.deleteById(id);
+    public void deleteByAdmin(final long id) {
+        Optional<Reservation> confirmedReservation = reservationRepository.findById(id);
+        reservationRepository.deleteByAdmin(id);
+        confirmedReservation.map(Reservation::getSlotId)
+                .ifPresent(this::promoteFirstWaitingReservation);
     }
 
     @Transactional
-    public void deleteById(final long id, final String name) {
+    public void deleteByUser(final long id, final String name) {
         if (reservationRepository.existsByIdAndName(id, name)) {
-            reservationRepository.deleteById(id, name);
+            Optional<Reservation> confirmedReservation = reservationRepository.findById(id);
+            reservationRepository.deleteByUser(id, name);
+            confirmedReservation.map(Reservation::getSlotId)
+                    .ifPresent(this::promoteFirstWaitingReservation);
             return;
         }
         reservationPolicy.validateForDelete(findReservation(id), name);
@@ -89,6 +96,9 @@ public class ReservationService {
 
         int updateRowCount = reservationRepository.update(modifiedReservation, slot);
         reservationPolicy.validateSingleRowUpdate(updateRowCount);
+        if (!reservation.getSlotId().equals(slot.getId())) {
+            promoteFirstWaitingReservation(reservation.getSlotId());
+        }
     }
 
     private Reservation findReservation(final long id) {
@@ -99,6 +109,14 @@ public class ReservationService {
     private ReservationTime findReservationTime(final Long timeId) {
         return reservationTimeRepository.findById(timeId)
                 .orElseThrow(ReservationTimeResourceNotFoundException::new);
+    }
+
+    private void promoteFirstWaitingReservation(final Long slotId) {
+        reservationRepository.findFirstWaitingBySlotId(slotId)
+                .ifPresent(waitingReservation -> {
+                    reservationRepository.saveConfirmed(waitingReservation, waitingReservation.getSlot());
+                    reservationRepository.deleteWaitingById(waitingReservation.getId());
+                });
     }
 
     private ReservationResult findSavedWaiting(final String name, final LocalDate date, final Long timeId,

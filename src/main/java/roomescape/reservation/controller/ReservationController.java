@@ -81,7 +81,7 @@ public class ReservationController {
             @ApiResponse(responseCode = "404", description = "예약이 존재하지 않음")
     })
     public void delete(@PathVariable Long id, @CurrentUser UserInfo userInfo) {
-        reservationService.deleteById(id, userInfo.name());
+        reservationService.deleteByUser(id, userInfo.name());
     }
 
     @PatchMapping("/{id}")

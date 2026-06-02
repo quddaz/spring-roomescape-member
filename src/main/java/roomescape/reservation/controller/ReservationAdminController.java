@@ -42,7 +42,7 @@ public class ReservationAdminController {
             @ApiResponse(responseCode = "204", description = "예약 삭제 성공")
     })
     public void delete(@PathVariable Long id) {
-        reservationService.deleteById(id);
+        reservationService.deleteByAdmin(id);
     }
 
 }
